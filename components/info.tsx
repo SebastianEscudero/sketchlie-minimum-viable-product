@@ -41,7 +41,7 @@ export const Info = ({
                         height={40}
                         width={40}
                         />
-                        <span className="font-semibold text-xl ml-2 text-black">
+                        <span className="font-semibold text-xl ml-2 text-black sm:flex hidden">
                             Sketchlie
                         </span>
                     </Link>
