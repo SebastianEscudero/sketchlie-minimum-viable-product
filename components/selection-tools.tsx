@@ -1,0 +1,179 @@
+"use client";
+
+import { memo, useCallback } from "react";
+import { BringToFront, SendToBack, Trash2 } from "lucide-react";
+
+import { Hint } from "@/components/hint";
+import { Camera, Color, Layer  } from "@/types/canvas";
+import { Button } from "@/components/ui/button";
+import { useSelectionBounds } from "@/hooks/use-selection-bounds";
+import { ColorPicker } from "./color-picker";
+
+interface Layers {
+  [key: string]: Layer;
+}
+
+interface SelectionToolsProps {
+  camera: Camera;
+  setLastUsedColor: (color: Color) => void;
+  zoom: number;
+  selectedLayers: string[];
+  liveLayers: any;
+  liveLayerIds: string[];
+  setLiveLayers: (layers: any) => void;
+  setLiveLayerIds: (ids: string[]) => void;
+};
+
+export const SelectionTools = memo(({
+  camera,
+  setLastUsedColor,
+  zoom,
+  selectedLayers,
+  setLiveLayers,
+  setLiveLayerIds,
+  liveLayers,
+  liveLayerIds
+}: SelectionToolsProps) => {
+
+  const moveToFront = useCallback(() => {
+    const indices: number[] = [];
+  
+    if (!liveLayerIds) {
+      return;
+    }
+  
+    let arr = [...liveLayerIds];
+
+    for (let i = 0; i < arr.length; i++) {
+      if (selectedLayers.includes(arr[i])) {
+        indices.push(i);
+      }
+    }
+  
+    const move = (arr: any[], fromIndex: number, toIndex: number) => {
+      var element = arr[fromIndex];
+      arr.splice(fromIndex, 1);
+      arr.splice(toIndex, 0, element);
+    }
+  
+    for (let i = 0; i < indices.length; i++) {
+      move(arr, indices[i], arr.length - indices.length + i);
+    }
+    
+    setLiveLayerIds(arr);
+    localStorage.setItem("layerIds", JSON.stringify(arr));
+  }, [selectedLayers, setLiveLayerIds, liveLayerIds]);
+  
+  const moveToBack = useCallback(() => {
+    const indices: number[] = [];
+  
+    if (!liveLayerIds) {
+      return;
+    }
+  
+    let arr = [...liveLayerIds];
+  
+    for (let i = 0; i < arr.length; i++) {
+      if (selectedLayers.includes(arr[i])) {
+        indices.push(i);
+      }
+    }
+  
+    const move = (arr: any[], fromIndex: number, toIndex: number) => {
+      var element = arr[fromIndex];
+      arr.splice(fromIndex, 1);
+      arr.splice(toIndex, 0, element);
+    }
+  
+    for (let i = 0; i < indices.length; i++) {
+      move(arr, indices[i], i);
+    }
+    
+    setLiveLayerIds(arr);
+    localStorage.setItem("layerIds", JSON.stringify(arr));
+  }, [selectedLayers, setLiveLayerIds, liveLayerIds]);
+  
+  const setFill = useCallback((fill: Color) => {
+    setLastUsedColor(fill);
+  
+    setLiveLayers((prevLayers: any) => {
+      const newLayers = { ...prevLayers };
+  
+      selectedLayers.forEach((id) => {
+        const layer = newLayers[id];
+        if (layer) {
+          newLayers[id].fill = fill;
+        }
+      });
+  
+      localStorage.setItem("layers", JSON.stringify(newLayers));
+      return newLayers;
+    });
+  }, [selectedLayers, setLastUsedColor, setLiveLayers]);
+
+  const deleteLayers = useCallback(() => {  
+    selectedLayers.forEach((id) => {
+      delete liveLayers[id];
+    });
+  
+
+    setLiveLayers({ ...liveLayers });
+    localStorage.setItem('layers', JSON.stringify(liveLayers));
+  }, [selectedLayers, liveLayers, setLiveLayers]);
+
+  const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
+
+  if (!selectionBounds) {
+    return null;
+  }
+
+  const x = (selectionBounds.width / 2 + selectionBounds.x) * zoom + camera.x;
+  const y = (selectionBounds.y) * zoom + camera.y;
+
+  return (
+    <div
+      className="absolute p-3 rounded-xl bg-white shadow-sm border flex select-none gap-x-2 items-center"
+      style={{
+        transform: `translate(
+          calc(${x}px - 50%),
+          calc(${y - 16}px - 100%)
+        )`
+      }}
+    >
+      <ColorPicker
+        onChange={setFill}
+      />
+      <Hint label="Bring to front">
+        <Button
+          onClick={moveToFront}
+          variant="board"
+          size="icon"
+        >
+          <BringToFront />
+        </Button>
+      </Hint>
+      <Hint label="Send to back" side="bottom">
+        <Button
+          onClick={moveToBack}
+          variant="board"
+          size="icon"
+        >
+          <SendToBack />
+        </Button>
+      </Hint>
+      <div className="flex items-center pl-2 ml-2 border-l border-neutral-200">
+        <Hint label="Delete">
+          <Button
+            variant="board"
+            size="icon"
+            onClick={deleteLayers}
+          >
+            <Trash2 />
+          </Button>
+        </Hint>
+      </div>
+    </div>
+  );
+});
+
+SelectionTools.displayName = "SelectionTools";
