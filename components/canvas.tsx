@@ -555,6 +555,7 @@ export const Canvas = () => {
             className="h-full w-full relative bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover' }}
         >
             <Info 
+                selectedLayers={selectedLayers}
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
             />

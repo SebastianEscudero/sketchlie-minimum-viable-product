@@ -12,23 +12,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { exportToPdf } from "@/lib/utils";
 import { ConfirmModal } from "./confirm-delete-board";
+import { Layers } from "@/types/canvas";
 
 interface ActionsProps {
     children: React.ReactNode;
     side?: DropdownMenuContentProps["side"];
     sideOffset?: DropdownMenuContentProps["sideOffset"];
-    title?: string;
     setLiveLayers: (layers: any) => void;
     setLiveLayersId: (layersId: string[]) => void;
+    selectedLayers: string[];
 };
 
 export const Actions = ({
     children,
     side,
     sideOffset,
-    title,
     setLiveLayers,
     setLiveLayersId,
+    selectedLayers
 }: ActionsProps) => {
     const onDelete = () => {
         setLiveLayers([]);
@@ -63,7 +64,7 @@ export const Actions = ({
                 <Button
                     variant="ghost"
                     className="p-3 cursor-pointer text-sm w-full justify-start font-semibold"
-                    onClick={() => exportToPdf("prueba")}
+                    onClick={() => exportToPdf(selectedLayers)}
                 >
                     <ArrowUpFromLine className="h-4 w-4 mr-2" />
                     Export to PDF

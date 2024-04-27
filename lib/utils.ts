@@ -1,16 +1,19 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 import { 
   Camera, 
   Color, 
   Layer, 
+  Layers, 
   LayerType, 
   PathLayer, 
   Point, 
   Side, 
   XYWH
 } from "@/types/canvas";
+import { toast } from "sonner";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -207,6 +210,20 @@ export function getSvgPathFromStroke(stroke: number[][]) {
 
 export const NAME = "Sketchlie";
 
-export const exportToPdf = async (title: string) => {
-  console.log("soon")
+export const exportToPdf = async (selectedLayers: string[]) => {
+  toast.info("Coming soon!", {
+    position: "top-center",
+    closeButton: true
+  });
+  // const liveLayers: Layers = JSON.parse(localStorage.getItem("layers") || '{}');
+  // let layersList: Layer[] = [];
+
+  // if (!selectedLayers.length || !liveLayers) {
+  //   toast.info("Selecciona los objetos para exportar", {
+  //     position: "top-center",
+  //     closeButton: true
+  //   });
+  //   return;
+  // }
+
 }

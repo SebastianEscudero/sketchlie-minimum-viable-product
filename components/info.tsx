@@ -21,11 +21,13 @@ const TabSeparator = () => {
 interface InfoProps {
     setLiveLayers: (layers: Layers) => void;
     setLiveLayersId: (layersId: string[]) => void;
+    selectedLayers: string[];
 }
 
 export const Info = ({
     setLiveLayersId,
     setLiveLayers,
+    selectedLayers
 }: InfoProps) => {
     const [isDialogOpen, setDialogOpen] = useState(false);
     return(
@@ -47,9 +49,10 @@ export const Info = ({
             </Hint>
             <TabSeparator />
             <Actions 
+                selectedLayers={selectedLayers}
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
-                title="Pizarra Online" side="bottom" sideOffset={10}>
+                side="bottom" sideOffset={10}>
                 <div>
                     <Hint label="Main menu" side="bottom" sideOffset={10}>
                         <Button size="icon" variant="board">
