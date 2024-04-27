@@ -29,8 +29,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const structuredData = {
+    "@context" : "https://schema.org",
+    "@type" : "WebSite",
+    "name" : "Pizarra Online",
+    "url" : metadata.alternates?.canonical
+  };
+
   return (
     <html lang="es">
+      <head>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      </head>
       <body className={inter.className}>
         <Toaster />
         {children}
