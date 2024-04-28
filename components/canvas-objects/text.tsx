@@ -4,11 +4,6 @@ import { TextLayer } from "@/types/canvas";
 import { cn, colorToCss } from "@/lib/utils";
 import { Kalam } from "next/font/google";
 
-const calculateFontSize = (width: number, height: number) => {
-    const scaleFactor = 0.4;
-    const geometricMean = Math.sqrt(width * height);
-    return geometricMean * scaleFactor;
-}
 const font = Kalam({
     subsets: ["latin"],
     weight: ["400"],
@@ -19,6 +14,7 @@ interface TextProps {
     layer: TextLayer;
     onPointerDown: (e: React.PointerEvent, id: string) => void;
     selectionColor?: string;
+    setLiveLayers: (layers: any) => void;
 };
 
 export const Text = ({
@@ -26,24 +22,31 @@ export const Text = ({
     onPointerDown,
     id,
     selectionColor,
+    setLiveLayers,
 }: TextProps) => {
-    const { x, y, width, height, fill, value } = layer;
+    const { x, y, width, height, fill, value, textFontSize } = layer;
+    const initialFontsize = textFontSize
     const [prevWidth, setPrevWidth] = useState(width);
     const [prevHeight, setPrevHeight] = useState(height);
-    const [fontSize, setFontSize] = useState(calculateFontSize(width, height));
+    const [fontSize, setFontSize] = useState(initialFontsize);
     const textRef = useRef<any>(null);
+    const storedLayers = localStorage.getItem('layers');
+    const layers = storedLayers ? JSON.parse(storedLayers) : {};
 
     const updateValue = (newValue: string) => {
         const storedLayers = localStorage.getItem('layers');
         const layers = storedLayers ? JSON.parse(storedLayers) : {};
         if (layers[id]) {
-          layer.value = newValue;
+            layers[id].value = newValue;
+            layers[id].textFontSize = fontSize;
+            localStorage.setItem('layers', JSON.stringify(layers));
         }
-        localStorage.setItem('layers', JSON.stringify(layers));
-      };
+        return layers;
+    };
 
     const handleContentChange = (e: ContentEditableEvent) => {
-        updateValue(e.target.value);
+        const newLayers = updateValue(e.target.value);
+        setLiveLayers(newLayers);
     };
 
     function handleKeyDown(e: React.KeyboardEvent) {
@@ -79,6 +82,12 @@ export const Text = ({
             const heightScaleFactor = height / prevHeight;
             const newFontSize = fontSize * Math.min(widthScaleFactor, heightScaleFactor);
             setFontSize(newFontSize);
+            if (layers[id]) {
+                layers[id].textFontSize = newFontSize;
+                localStorage.setItem('layers', JSON.stringify(layers));
+            }
+            setLiveLayers(layers);
+            console.log(localStorage.getItem('layers'));
         }
     }, [width, height, prevWidth, prevHeight]);
     

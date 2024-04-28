@@ -3,7 +3,6 @@
 import { Canvas } from "@/components/canvas";
 import { Loading } from "@/components/loading";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 const Board = () => {
   const [isClient, setIsClient] = useState(false);
@@ -11,15 +10,6 @@ const Board = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-    
-  useEffect(() => {
-    toast("Bienvenido a Sketchlie!", {
-      description: "🖱️ Apreta click derecho para moverte alrededor del canvas!",
-      position: "top-center",
-      closeButton: true
-    });
-  }, [])
 
   if (!isClient) {
     return (

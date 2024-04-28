@@ -69,14 +69,29 @@ export const Canvas = () => {
 
     const insertLayer = useCallback((layerType: LayerType, position: Point) => {
         const layerId = nanoid();
-        const layer = {
-            type: layerType,
-            x: position.x,
-            y: position.y,
-            height: 100,
-            width: 100,
-            fill: lastUsedColor,
-        };
+        
+        let layer 
+
+        if (layerType === LayerType.Text) {
+            layer = {
+                type: layerType,
+                x: position.x,
+                y: position.y,
+                height: 100,
+                width: 100,
+                fill: lastUsedColor,
+                textFontSize: 40
+            };
+        } else {
+            layer = {
+                type: layerType,
+                x: position.x,
+                y: position.y,
+                height: 100,
+                width: 100,
+                fill: lastUsedColor,
+            };
+        }
 
         const newLayers = { ...liveLayers, [layerId]: layer };
         const newLayerIds = [...liveLayersId, layerId];
@@ -428,8 +443,10 @@ export const Canvas = () => {
 
     const copySelectedLayers = useCallback(() => {
         const copied = new Map();
+        const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');        
+        console.log(localStorageLiveLayers)
         for (const id of selectedLayers) {
-          const layer = liveLayers[id];
+          const layer = localStorageLiveLayers[id];
           if (layer) {
             // Deep copy the layer object
             const copiedLayer = JSON.parse(JSON.stringify(layer));
@@ -437,31 +454,42 @@ export const Canvas = () => {
           }
         }
         setCopiedLayers(copied);
-        console.log(copied)
-      }, [selectedLayers, liveLayers]);
+      }, [selectedLayers]);
       
+
       const pasteCopiedLayers = useCallback((mousePosition: any) => {
         let minX = Infinity;
         let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
         copiedLayers.forEach((layer) => {
           minX = Math.min(minX, layer.x);
           minY = Math.min(minY, layer.y);
+          maxX = Math.max(maxX, layer.x + layer.width);
+          maxY = Math.max(maxY, layer.y + layer.height);
         });
-      
+    
+        // Calculate the center of the copied layers
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+    
         // Calculate the offset from the mouse position
-        const offsetX = mousePosition.x - minX;
-        const offsetY = mousePosition.y - minY;
+        const offsetX = mousePosition.x - centerX;
+        const offsetY = mousePosition.y - centerY;
       
+        const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');        
+        const localStorageLiveLayersIds = JSON.parse(localStorage.getItem("layerIds") || '{}');        
+
         const newSelection = [];
-        const newLiveLayers = { ...liveLayers };
-        const newLiveLayerIds = [...liveLayersId];
-        copiedLayers.forEach((layer, id) => {
+        const newLiveLayers = { ...localStorageLiveLayers };
+        const newLiveLayerIds = [...localStorageLiveLayersIds];
+        copiedLayers.forEach((layer) => {
           const newId = nanoid();
           newSelection.push(newId);
           newLiveLayerIds.push(newId);
           const clonedLayer = { ...layer };
-          clonedLayer.x = clonedLayer.x + offsetX; // Adjust x position
-          clonedLayer.y = clonedLayer.y + offsetY; // Adjust y position
+          clonedLayer.x = clonedLayer.x + offsetX;
+          clonedLayer.y = clonedLayer.y + offsetY;
           newLiveLayers[newId] = clonedLayer;
         });
       
@@ -469,7 +497,7 @@ export const Canvas = () => {
         setLiveLayersId(newLiveLayerIds);
         localStorage.setItem("layers", JSON.stringify(newLiveLayers));
         localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
-      }, [copiedLayers, liveLayers, liveLayersId]);
+      }, [copiedLayers]);
 
     useEffect(() => {
         let animationFrameId: number | null = null;
@@ -591,6 +619,7 @@ export const Canvas = () => {
                 >
                     {liveLayersId.map((layerId: any) => (
                         <LayerPreview
+                            setLiveLayers={setLiveLayers}
                             liveLayers={liveLayers}
                             key={layerId}
                             id={layerId}

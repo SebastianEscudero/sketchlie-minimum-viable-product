@@ -14,13 +14,15 @@ interface LayerPreviewProps {
   onLayerPointerDown: (e: React.PointerEvent, layerId: string) => void;
   selectionColor?: string;
   liveLayers: any;
+  setLiveLayers: (layers: any) => void;
 };
 
 export const LayerPreview = memo(({
   id,
   onLayerPointerDown,
   selectionColor,
-  liveLayers
+  liveLayers,
+  setLiveLayers,
 }: LayerPreviewProps) => {
 
   const layer = liveLayers[id];
@@ -54,6 +56,7 @@ export const LayerPreview = memo(({
     case LayerType.Text:
       return (
         <Text
+          setLiveLayers={setLiveLayers}
           id={id}
           layer={layer}
           onPointerDown={onLayerPointerDown}
