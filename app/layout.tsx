@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.pizarraonline.com"),
   title: "Pizarra Online Gratis | Sketchlie",
-  description: "Sketchlie es la pizarra online en tiempo real real más rápida para tu equipo. visualiza en móvil, tableta o computadora de escritorio. Sin registros, sin instalaciones.",
+  description: "Pizarra Online es la pizarra en linea más rápida y fácil de usar. Sin registro y sin descargas, hecha para dibujar y compartir ideas en tiempo real. Pruébala gratis",
   keywords: ["pizarra online", "pizarra virtual", "pizarra online gratis", "pizarra en linea", "pizarra virtual gratis"],
   alternates: {
     canonical: "https://www.pizarraonline.com",
@@ -43,6 +43,9 @@ export default function RootLayout({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       </head>
       <body className={inter.className}>
+        <h1 className="hidden">
+          Pizarra Online Gratis | Sketchlie
+        </h1>
         <Toaster />
         {children}
       </body>
