@@ -483,7 +483,8 @@ export const Canvas = () => {
 
     const copySelectedLayers = useCallback(() => {
         const copied = new Map();
-        const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');        
+        const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');      
+        console.log(localStorageLiveLayers)  
         for (const id of selectedLayers) {
           const layer = localStorageLiveLayers[id];
           if (layer) {
@@ -645,7 +646,8 @@ export const Canvas = () => {
             />
             <svg
                 id="canvas"
-                className="h-[100vh] w-[100vw]"
+                className="w-full"
+                style={{ height: `calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom))` }}
                 onWheel={onWheel}
                 onPointerMove={onPointerMove}
                 onPointerDown={onPointerDown}
