@@ -620,7 +620,7 @@ export const Canvas = () => {
 
     return (
         <main
-            className="h-[100vh] w-[100vw] relative bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover' }}
+            className="h-full w-full relative bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover' }}
         >
             <Info 
                 selectedLayers={selectedLayers}
