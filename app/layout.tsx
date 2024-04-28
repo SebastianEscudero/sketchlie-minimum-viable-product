@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "Sketchlie es la pizarra online en tiempo real real más rápida para tu equipo. visualiza en móvil, tableta o computadora de escritorio. Sin registros, sin instalaciones.",
   keywords: ["pizarra online", "pizarra virtual", "pizarra online gratis", "pizarra en linea", "pizarra virtual gratis"],
   alternates: {
-    canonical: "https://www.pizarraonline.com/",
+    canonical: "https://www.pizarraonline.com",
   },
   robots: {
     index: true,
