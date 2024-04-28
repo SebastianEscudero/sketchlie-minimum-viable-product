@@ -99,7 +99,7 @@ import { ImageButton } from "./image-button";
               canvasState.layerType === LayerType.Ellipse
             }
           />
-          <ImageButton 
+          {/* <ImageButton 
             onImageSelect={onImageSelect}
             label="Image"
             icon={Image}
@@ -111,7 +111,7 @@ import { ImageButton } from "./image-button";
               canvasState.mode === CanvasMode.Inserting &&
               canvasState.layerType === LayerType.Image
             }
-          />
+          /> */}
           <ToolButton
             label="Pen"
             icon={Pencil}
