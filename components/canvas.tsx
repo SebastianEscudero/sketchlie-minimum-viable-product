@@ -620,7 +620,7 @@ export const Canvas = () => {
 
     return (
         <main
-        className="flex flex-col h-screen w-full relative bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover' }}
+            className="h-[100vh] w-[100vw] relative bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover' }}
         >
             <Info 
                 selectedLayers={selectedLayers}
@@ -646,7 +646,7 @@ export const Canvas = () => {
             />
             <svg
                 id="canvas"
-                className="flex-grow w-full"
+                className="h-[100vh] w-[100vw]"
                 onWheel={onWheel}
                 onPointerMove={onPointerMove}
                 onPointerDown={onPointerDown}
