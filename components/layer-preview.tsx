@@ -8,6 +8,7 @@ import { Ellipse } from "@/components/canvas-objects/ellipse";
 import { Rectangle } from "@/components/canvas-objects/rectangle";
 import { Note } from "@/components/canvas-objects/note";
 import { Path } from "@/components/canvas-objects/path";
+import { InsertImage } from "./canvas-objects/image";
 
 interface LayerPreviewProps {
   id: string;
@@ -81,7 +82,17 @@ export const LayerPreview = memo(({
           selectionColor={selectionColor}
         />
       );
-    default:
+      case LayerType.Image:
+        return (
+          <InsertImage
+            isUploading={false}
+            id={id}
+            layer={layer}
+            onPointerDown={onLayerPointerDown}
+            selectionColor={selectionColor}
+          />
+        );
+      default:
       return null;
   }
 });

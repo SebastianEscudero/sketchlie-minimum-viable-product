@@ -47,7 +47,7 @@ export const Canvas = () => {
     const [isPanning, setIsPanning] = useState(false);
     const [rightClickPanning, setIsRightClickPanning] = useState(false);
     const [startPanPoint, setStartPanPoint] = useState({ x: 0, y: 0 });
-
+    const [selectedImage, setSelectedImage] = useState<string>("");
     const [lastUsedColor, setLastUsedColor] = useState<Color>({
         r: 0,
         g: 0,
@@ -104,6 +104,40 @@ export const Canvas = () => {
 
         setCanvasState({ mode: CanvasMode.None });
     }, [lastUsedColor, liveLayers, liveLayersId]);
+
+    const insertImage = useCallback((
+        layerType: LayerType.Image,
+        position: Point,
+        selectedImage: string,
+      ) => {
+        const layerId = nanoid();
+    
+    
+        if (selectedImage === "") {
+          return;
+        }
+    
+        console.log(selectedImage)
+
+        const layer = {
+          type: layerType,
+          x: position.x,
+          y: position.y,
+          height: 100,
+          width: 100,
+          src: selectedImage,
+          fill: null,
+          value: "",
+        };
+    
+        const newLayers = { ...liveLayers, [layerId]: layer };
+        const newLayerIds = [...liveLayersId, layerId];
+        setLiveLayersId(newLayerIds);
+        setLiveLayers(newLayers as Layers);
+        localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
+        localStorage.setItem("layers", JSON.stringify(newLayers));
+        setCanvasState({ mode: CanvasMode.None });
+      }, [liveLayers, liveLayersId]);
 
     const translateSelectedLayers = useCallback((point: Point) => {
         if (canvasState.mode !== CanvasMode.Translating) {
@@ -396,15 +430,18 @@ export const Canvas = () => {
             });
         } else if (canvasState.mode === CanvasMode.Pencil) {
             insertPath();
-        } else if (canvasState.mode === CanvasMode.Inserting) {
+          } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Image) {
+            setSelectedImage("");
+            insertImage(LayerType.Image, point, selectedImage);
+          } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
             insertLayer(canvasState.layerType, point);
-        } else if (canvasState.mode === CanvasMode.Moving) {
+          } else if (canvasState.mode === CanvasMode.Moving) {
             setIsPanning(false);
-        } else {
+          } else {
             setCanvasState({
-                mode: CanvasMode.None,
+              mode: CanvasMode.None,
             });
-        }
+          }
 
     },
         [
@@ -416,6 +453,9 @@ export const Canvas = () => {
             insertPath,
             setIsPanning,
             zoom,
+            selectedImage,
+            setSelectedImage,
+            insertImage,
         ]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
@@ -444,7 +484,6 @@ export const Canvas = () => {
     const copySelectedLayers = useCallback(() => {
         const copied = new Map();
         const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');        
-        console.log(localStorageLiveLayers)
         for (const id of selectedLayers) {
           const layer = localStorageLiveLayers[id];
           if (layer) {
@@ -590,6 +629,7 @@ export const Canvas = () => {
             <SketchlieBlock />
             <BottomCanvasLinks />
             <Toolbar
+                onImageSelect={setSelectedImage}
                 canvasState={canvasState}
                 setCanvasState={setCanvasState}
             />

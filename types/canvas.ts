@@ -69,7 +69,17 @@ export type Color = {
     fill: Color | null;
     value?: string;
   };
-
+  
+  export type ImageLayer = {
+    type: LayerType.Image;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    src: string;
+    fill: Color | null;
+    value?: string;
+  };
   
   export type Point = {
     x: number;
@@ -105,7 +115,7 @@ export type Color = {
       }
     | {
         mode: CanvasMode.Inserting,
-        layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note;
+        layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note | LayerType.Image | LayerType.Path;
       }
     | {
         mode: CanvasMode.Pencil,
@@ -134,7 +144,7 @@ export type Color = {
     Moving
   };
   
-  export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | NoteLayer;
+  export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | NoteLayer | ImageLayer;
 
   export interface Layers {
     [key: string]: Layer;
