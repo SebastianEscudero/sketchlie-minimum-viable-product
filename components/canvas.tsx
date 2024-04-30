@@ -571,8 +571,6 @@ export const Canvas = () => {
         }
       }, [copySelectedLayers, pasteCopiedLayers, isClickingLayer, camera, zoom]);
 
-      console.log(liveLayersId.length)
-
     //   useEffect(() => {
     //     let lastFrameTime = performance.now();
     //     let frameCount = 0;
