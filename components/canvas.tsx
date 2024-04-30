@@ -1,7 +1,7 @@
 "use client";
 
 import { nanoid } from "nanoid";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import {
     colorToCss,
     findIntersectingLayersWithRectangle,
@@ -38,7 +38,6 @@ export const Canvas = () => {
     const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
     const [zoom, setZoom] = useState(1);
     const [copiedLayers, setCopiedLayers] = useState<Map<string, any>>(new Map());
-    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [pencilDraft, setPencilDraft] = useState<number[][]>([[]]);    
     const [canvasState, setCanvasState] = useState<CanvasState>({
         mode: CanvasMode.None,
@@ -117,8 +116,6 @@ export const Canvas = () => {
           return;
         }
     
-        console.log(selectedImage)
-
         const layer = {
           type: layerType,
           x: position.x,
@@ -484,7 +481,6 @@ export const Canvas = () => {
     const copySelectedLayers = useCallback(() => {
         const copied = new Map();
         const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');      
-        console.log(localStorageLiveLayers)  
         for (const id of selectedLayers) {
           const layer = localStorageLiveLayers[id];
           if (layer) {
@@ -509,11 +505,9 @@ export const Canvas = () => {
           maxY = Math.max(maxY, layer.y + layer.height);
         });
     
-        // Calculate the center of the copied layers
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
-    
-        // Calculate the offset from the mouse position
+
         const offsetX = mousePosition.x - centerX;
         const offsetY = mousePosition.y - centerY;
       
@@ -539,37 +533,17 @@ export const Canvas = () => {
         localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
       }, [copiedLayers]);
 
-    useEffect(() => {
-        let animationFrameId: number | null = null;
-      
-        function onPointerMove(e: PointerEvent) {
-          // Cancel the previous animation frame
-          if (animationFrameId !== null) {
-            cancelAnimationFrame(animationFrameId);
-          }
-      
-          // Request a new animation frame
-          animationFrameId = requestAnimationFrame(() => {
-            setMousePosition({
-              x: (Math.round(e.clientX) - camera.x) / zoom,
-              y: (Math.round(e.clientY) - camera.y) / zoom,
-            });
-          });
-        }
-      
-        document.addEventListener("pointermove", onPointerMove);
-      
-        return () => {
-          document.removeEventListener("pointermove", onPointerMove);
-      
-          // Cancel the animation frame when the component unmounts
-          if (animationFrameId !== null) {
-            cancelAnimationFrame(animationFrameId);
-          }
-        };
-      }, [camera, mousePosition, setMousePosition, zoom]);
+      const mousePositionRef = useRef({ x: 0, y: 0 });
 
       useEffect(() => {
+        const onMouseMove = (e: any) => {
+            if (e.buttons === 0) { // Ignore right-click events
+              mousePositionRef.current = pointerEventToCanvasPoint(e, camera, zoom);
+            }
+          };
+      
+        document.addEventListener('mousemove', onMouseMove);
+      
         function onKeyDown(e: KeyboardEvent) {
           switch (e.key.toLocaleLowerCase()) {
             case "c": {
@@ -581,20 +555,48 @@ export const Canvas = () => {
             case "v": {
               if (e.ctrlKey || e.metaKey) {
                 if (isClickingLayer === false) {
-                  pasteCopiedLayers(mousePosition);
+                  pasteCopiedLayers(mousePositionRef.current);
                 }
               }
               break;
             }
           }
         }
-
+      
         document.addEventListener("keydown", onKeyDown);
-
+      
         return () => {
-          document.removeEventListener("keydown", onKeyDown)
+          document.removeEventListener("keydown", onKeyDown);
+          document.removeEventListener('mousemove', onMouseMove);
         }
-      }, [copySelectedLayers, pasteCopiedLayers, mousePosition, isClickingLayer]);
+      }, [copySelectedLayers, pasteCopiedLayers, isClickingLayer, camera, zoom]);
+
+      console.log(liveLayersId.length)
+
+    //   useEffect(() => {
+    //     let lastFrameTime = performance.now();
+    //     let frameCount = 0;
+    //     let lastSecondTime = performance.now();
+      
+    //     const loop = () => {
+    //       const now = performance.now();
+    //       lastFrameTime = now;
+    //       frameCount++;
+      
+    //       if (now - lastSecondTime >= 1000) {
+    //         console.log(`FPS: ${frameCount}`);
+    //         frameCount = 0;
+    //         lastSecondTime = now;
+    //       }
+      
+    //       frameId = requestAnimationFrame(loop);
+    //     };
+      
+    //     let frameId = requestAnimationFrame(loop);
+      
+    //     // Cleanup function
+    //     return () => cancelAnimationFrame(frameId);
+    //   }, []);
 
     useEffect(() => {
         if (typeof document !== 'undefined') {

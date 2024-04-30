@@ -118,8 +118,9 @@ export const SelectionTools = memo(({
   
 
     setLiveLayers({ ...liveLayers });
+    setLiveLayerIds([...liveLayerIds.filter((id) => !selectedLayers.includes(id))]);
     localStorage.setItem('layers', JSON.stringify(liveLayers));
-  }, [selectedLayers, liveLayers, setLiveLayers]);
+  }, [selectedLayers, liveLayers, setLiveLayers, liveLayerIds, setLiveLayerIds]);
 
   const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
 
