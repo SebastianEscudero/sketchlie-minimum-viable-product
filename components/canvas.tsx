@@ -631,9 +631,9 @@ export const Canvas = () => {
                 }
                 case "backspace":
                     if (
-                      document.activeElement instanceof HTMLTextAreaElement ||
-                      (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === "true") ||
-                      selectedLayers.some(layerId => liveLayers[layerId].type === LayerType.Text)
+                        document.activeElement instanceof HTMLTextAreaElement ||
+                        document.activeElement instanceof HTMLInputElement ||
+                        (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === "true")
                     ) {
                       break;
                     }
