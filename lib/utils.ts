@@ -6,7 +6,6 @@ import {
   Camera, 
   Color, 
   Layer, 
-  Layers, 
   LayerType, 
   PathLayer, 
   Point, 
@@ -31,25 +30,29 @@ export function pointerEventToCanvasPoint(
 };
 
 export function colorToCss(color: Color) {
-  if (!color || (color.r === 0 && color.g === 0 && color.b === 0)) {
-    return "transparent";
-  }
-
-  return `#${color.r.toString(16).padStart(2, "0")}${color.g.toString(16).padStart(2, "0")}${color.b.toString(16).padStart(2, "0")}`;
+  return `rgba(${color.r},${color.g},${color.b},${color.a})`;
 }
 
 export function resizeBounds(
   type: any,
   bounds: XYWH, 
   corner: Side, 
-  point: Point
+  point: Point,
+  textareaRef?: React.RefObject<HTMLTextAreaElement>,
+  layer?: Layer
 ): XYWH {
+
   const result = {
     x: bounds.x,
     y: bounds.y,
     width: bounds.width,
     height: bounds.height,
+    textFontSize: 0
   };
+
+  if (layer?.type === LayerType.Text) {
+    result.textFontSize = layer.textFontSize;
+  }
 
   const isCorner = corner === (Side.Top + Side.Left) || corner === (Side.Top + Side.Right) || corner === (Side.Bottom + Side.Left) || corner === (Side.Bottom + Side.Right);
   const aspectRatio = bounds.width / bounds.height;
@@ -96,6 +99,17 @@ export function resizeBounds(
       result.height = Math.abs(point.y - bounds.y);
     }
   }
+
+  if (layer && layer?.height/layer?.width === result.height/result.width && textareaRef && textareaRef.current && layer.type === LayerType.Text) {
+    const newFontSize = Math.min(result.width/layer.width, result.height/layer.height ) * layer.textFontSize
+    result.textFontSize = newFontSize
+    return result
+  }
+
+  if (!isCorner && textareaRef && textareaRef.current) {
+    result.height = textareaRef.current.scrollHeight;
+    return result
+  } 
 
   return result;
 };

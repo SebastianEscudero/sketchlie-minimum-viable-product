@@ -1,17 +1,14 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { BringToFront, SendToBack, Trash2 } from "lucide-react";
-
 import { Hint } from "@/components/hint";
-import { Camera, Color, Layer  } from "@/types/canvas";
+import { Camera, Color, LayerType  } from "@/types/canvas";
 import { Button } from "@/components/ui/button";
 import { useSelectionBounds } from "@/hooks/use-selection-bounds";
 import { ColorPicker } from "./color-picker";
+import { FontSizePicker } from "./font-picker";
 
-interface Layers {
-  [key: string]: Layer;
-}
 
 interface SelectionToolsProps {
   camera: Camera;
@@ -22,6 +19,7 @@ interface SelectionToolsProps {
   liveLayerIds: string[];
   setLiveLayers: (layers: any) => void;
   setLiveLayerIds: (ids: string[]) => void;
+  lastUsedColor: Color;
 };
 
 export const SelectionTools = memo(({
@@ -32,8 +30,21 @@ export const SelectionTools = memo(({
   setLiveLayers,
   setLiveLayerIds,
   liveLayers,
-  liveLayerIds
+  liveLayerIds,
+  lastUsedColor,
 }: SelectionToolsProps) => {
+
+  let isText = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Text);
+  const [initialPosition, setInitialPosition] = useState<{x: number, y: number} | null>(null);
+  const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
+
+  useEffect(() => {
+    if (selectionBounds) {
+      const x = (selectionBounds.width / 2 + selectionBounds.x) * zoom + camera.x;
+      const y = (selectionBounds.y) * zoom + camera.y;
+      setInitialPosition({x, y});
+    }
+  }, [selectedLayers]);
 
   const moveToFront = useCallback(() => {
     const indices: number[] = [];
@@ -122,26 +133,31 @@ export const SelectionTools = memo(({
     localStorage.setItem('layers', JSON.stringify(liveLayers));
   }, [selectedLayers, liveLayers, setLiveLayers, liveLayerIds, setLiveLayerIds]);
 
-  const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
-
   if (!selectionBounds) {
     return null;
   }
 
-  const x = (selectionBounds.width / 2 + selectionBounds.x) * zoom + camera.x;
-  const y = (selectionBounds.y) * zoom + camera.y;
-
   return (
     <div
-      className="absolute p-3 rounded-xl bg-white shadow-sm border flex select-none gap-x-2 items-center"
+      className="absolute p-1 rounded-sm bg-white shadow-sm border flex select-none gap-x-2 items-center"
       style={{
-        transform: `translate(
-          calc(${x}px - 50%),
-          calc(${y - 16}px - 100%)
-        )`
+        transform: initialPosition
+          ? `translate(
+              calc(${initialPosition.x}px - 50%),
+              calc(${initialPosition.y - 30}px - 100%)
+            )`
+          : undefined
       }}
     >
+      {isText && (
+        <FontSizePicker
+          selectedLayers={selectedLayers}
+          setLiveLayers={setLiveLayers}
+          liveLayers={liveLayers}
+        />
+      )}
       <ColorPicker
+        lastUsedColor={lastUsedColor}
         onChange={setFill}
       />
       <Hint label="Bring to front">
@@ -162,7 +178,7 @@ export const SelectionTools = memo(({
           <SendToBack />
         </Button>
       </Hint>
-      <div className="flex items-center pl-2 ml-2 border-l border-neutral-200">
+      <div className="flex items-center pl-2 border-l border-neutral-200">
         <Hint label="Delete">
           <Button
             variant="board"

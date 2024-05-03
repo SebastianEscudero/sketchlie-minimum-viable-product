@@ -17,6 +17,7 @@ import {
     Layers,
     LayerType,
     Point,
+    PreviewLayer,
     Side,
     XYWH,
 } from "@/types/canvas";
@@ -30,64 +31,72 @@ import { SelectionTools } from "./selection-tools";
 import { Info } from "./info";
 import { SketchlieBlock } from "./sketchlie-block";
 import { BottomCanvasLinks } from "./bottom-canvas-links";
+import { CurrentPreviewLayer } from "./current-preview-layer";
 
 export const Canvas = () => {
-    const [isClickingLayer, setIsClickingLayer] = useState(false);
+    const mousePositionRef = useRef({ x: 0, y: 0 });
     const [liveLayers, setLiveLayers] = useState<Layers>({});
     const [liveLayersId, setLiveLayersId] = useState<string[]>([]);
     const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
-    const [zoom, setZoom] = useState(1);
+    const [zoom, setZoom] = useState(localStorage.getItem("zoom") ? parseFloat(localStorage.getItem("zoom") || '1') : 1);
     const [copiedLayers, setCopiedLayers] = useState<Map<string, any>>(new Map());
-    const [pencilDraft, setPencilDraft] = useState<number[][]>([[]]);    
+    const [pencilDraft, setPencilDraft] = useState<number[][]>([[]]);
+    const [textRef, setTextRef] = useState<any>(null);
     const [canvasState, setCanvasState] = useState<CanvasState>({
         mode: CanvasMode.None,
     });
-    const [camera, setCamera] = useState<Camera>({ x: 0, y: 0 });
+    const [camera, setCamera] = useState<Camera>(localStorage.getItem("camera") ? JSON.parse(localStorage.getItem("camera") || '{"x":0,"y":0}') : { x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
     const [rightClickPanning, setIsRightClickPanning] = useState(false);
     const [startPanPoint, setStartPanPoint] = useState({ x: 0, y: 0 });
     const [selectedImage, setSelectedImage] = useState<string>("");
+    const [currentPreviewLayer, setCurrentPreviewLayer] = useState<PreviewLayer | null>(null);
     const [lastUsedColor, setLastUsedColor] = useState<Color>({
         r: 0,
         g: 0,
         b: 0,
+        a: 0,
     });
 
     useEffect(() => {
         const storedLayers = localStorage.getItem('layers');
         const storedLayerIds = localStorage.getItem('layerIds');
         if (storedLayers) {
-          setLiveLayers(JSON.parse(storedLayers));
+            setLiveLayers(JSON.parse(storedLayers));
         }
         if (storedLayerIds) {
-          setLiveLayersId(JSON.parse(storedLayerIds));
+            setLiveLayersId(JSON.parse(storedLayerIds));
         }
-      }, []);
+    }, []);
 
     useDisableScrollBounce();
 
-    const insertLayer = useCallback((layerType: LayerType, position: Point) => {
+    const insertLayer = useCallback((layerType: LayerType, position: Point, width: number, height: number) => {
         const layerId = nanoid();
-        
-        let layer 
+        let layer
 
         if (layerType === LayerType.Text) {
+
+            if (width < 130) {
+                width = 130;
+            }
+
             layer = {
                 type: layerType,
                 x: position.x,
                 y: position.y,
-                height: 100,
-                width: 100,
+                height: height,
+                width: width,
                 fill: lastUsedColor,
-                textFontSize: 40
+                textFontSize: 12,
             };
         } else {
             layer = {
                 type: layerType,
                 x: position.x,
                 y: position.y,
-                height: 100,
-                width: 100,
+                height: height,
+                width: width,
                 fill: lastUsedColor,
             };
         }
@@ -108,25 +117,25 @@ export const Canvas = () => {
         layerType: LayerType.Image,
         position: Point,
         selectedImage: string,
-      ) => {
+    ) => {
         const layerId = nanoid();
-    
-    
+
+
         if (selectedImage === "") {
-          return;
+            return;
         }
-    
+
         const layer = {
-          type: layerType,
-          x: position.x,
-          y: position.y,
-          height: 100,
-          width: 100,
-          src: selectedImage,
-          fill: null,
-          value: "",
+            type: layerType,
+            x: position.x,
+            y: position.y,
+            height: 80,
+            width: 80,
+            src: selectedImage,
+            fill: null,
+            value: "",
         };
-    
+
         const newLayers = { ...liveLayers, [layerId]: layer };
         const newLayerIds = [...liveLayersId, layerId];
         setLiveLayersId(newLayerIds);
@@ -134,36 +143,36 @@ export const Canvas = () => {
         localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
         localStorage.setItem("layers", JSON.stringify(newLayers));
         setCanvasState({ mode: CanvasMode.None });
-      }, [liveLayers, liveLayersId]);
+    }, [liveLayers, liveLayersId]);
 
     const translateSelectedLayers = useCallback((point: Point) => {
         if (canvasState.mode !== CanvasMode.Translating) {
-          return;
+            return;
         }
-      
+
         const offset = {
             x: (point.x - canvasState.current.x),
             y: (point.y - canvasState.current.y)
-          };
-        
-      
+        };
+
+
         const newLayers = { ...liveLayers };
-      
+
         selectedLayers.forEach(id => {
             const layer = newLayers[id];
-            
+
             if (layer) {
-              const newLayer = { ...layer };
-              newLayer.x += offset.x;
-              newLayer.y += offset.y;
-              newLayers[id] = newLayer;
+                const newLayer = { ...layer };
+                newLayer.x += offset.x;
+                newLayer.y += offset.y;
+                newLayers[id] = newLayer;
             }
-          });
-          
+        });
+
         setLiveLayers(newLayers);
         localStorage.setItem("layers", JSON.stringify(newLayers));
         setCanvasState({ mode: CanvasMode.Translating, current: point });
-      }, [canvasState, liveLayers, selectedLayers]);
+    }, [canvasState, liveLayers, selectedLayers]);
 
     const unselectLayers = useCallback(() => {
         if (selectedLayers.length > 0) {
@@ -258,13 +267,25 @@ export const Canvas = () => {
 
 
         const layer = liveLayers[selectedLayers[0]];
+        let bounds
 
-        const bounds = resizeBounds(
-            layer?.type,
-            canvasState.initialBounds,
-            canvasState.corner,
-            point,
-        );
+        if (layer.type === LayerType.Text) {
+            bounds = resizeBounds(
+                layer?.type,
+                canvasState.initialBounds,
+                canvasState.corner,
+                point,
+                textRef,
+                layer,
+            );
+        } else {
+            bounds = resizeBounds(
+                layer?.type,
+                canvasState.initialBounds,
+                canvasState.corner,
+                point,
+            );
+        }
 
         if (layer) {
             Object.assign(layer, bounds);
@@ -272,7 +293,7 @@ export const Canvas = () => {
             setLiveLayers({ ...liveLayers });
             localStorage.setItem("layers", JSON.stringify(liveLayers));
         }
-    }, [canvasState, liveLayers, selectedLayers]);
+    }, [canvasState, liveLayers, selectedLayers, textRef]);
 
     const onResizeHandlePointerDown = useCallback((
         corner: Side,
@@ -304,28 +325,57 @@ export const Canvas = () => {
         const x = e.clientX - svgRect.left;
         const y = e.clientY - svgRect.top;
 
-        if (e.ctrlKey) {
-            let newZoom = zoom;
-            if (e.deltaY < 0) {
-                newZoom = Math.min(zoom * 1.1, 3);
-            } else {
-                newZoom = Math.max(zoom / 1.1, 0.5);
+        let newZoom = zoom;
+        if (e.deltaY < 0) {
+            newZoom = Math.min(zoom * 1.1, 3);
+        } else {
+            newZoom = Math.max(zoom / 1.1, 0.5);
+        }
+
+        const zoomFactor = newZoom / zoom;
+        const newX = x - (x - camera.x) * zoomFactor;
+        const newY = y - (y - camera.y) * zoomFactor;
+
+        setZoom(newZoom);
+        localStorage.setItem("zoom", newZoom.toString());
+        setCamera({ x: newX, y: newY });
+        localStorage.setItem("camera", JSON.stringify({ x: newX, y: newY }));
+    }, [zoom, camera]);
+
+    const onPointerDown = useCallback((
+        e: React.PointerEvent,
+    ) => {
+        const point = pointerEventToCanvasPoint(e, camera, zoom);
+
+        if (e.button === 0) {
+            if (canvasState.mode === CanvasMode.Moving) {
+                setIsPanning(true);
+                setStartPanPoint({ x: e.clientX, y: e.clientY });
+                document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
+                return;
             }
 
-            const zoomFactor = newZoom / zoom;
-            const newX = x - (x - camera.x) * zoomFactor;
-            const newY = y - (y - camera.y) * zoomFactor;
+            if (canvasState.mode === CanvasMode.Inserting) {
+                const point = pointerEventToCanvasPoint(e, camera, zoom);
+                if (e.button === 0 && canvasState.mode === CanvasMode.Inserting) {
+                    setStartPanPoint(point);
+                    setIsPanning(false);
+                    return;
+                }
+            }
 
-            setZoom(newZoom);
-            setCamera({ x: newX, y: newY });
+            if (canvasState.mode === CanvasMode.Pencil) {
+                startDrawing(point, e.pressure);
+                return;
+            }
+
+            setCanvasState({ origin: point, mode: CanvasMode.Pressing });
+        } else if (e.button === 2 || e.button === 1) {
+            setIsRightClickPanning(true);
+            setStartPanPoint({ x: e.clientX, y: e.clientY });
+            document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
         }
-        else {
-            setCamera((camera) => ({
-                x: camera.x - e.deltaX / zoom,
-                y: camera.y - e.deltaY / zoom,
-            }));
-        }
-    }, [zoom, camera]);
+    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
@@ -336,6 +386,7 @@ export const Canvas = () => {
                 y: camera.y + e.clientY - startPanPoint.y,
             };
             setCamera(newCameraPosition);
+            localStorage.setItem("camera", JSON.stringify(newCameraPosition));
             setStartPanPoint({ x: e.clientX, y: e.clientY });
         }
 
@@ -345,6 +396,7 @@ export const Canvas = () => {
                 y: camera.y + e.clientY - startPanPoint.y,
             };
             setCamera(newCameraPosition);
+            localStorage.setItem("camera", JSON.stringify(newCameraPosition));
             setStartPanPoint({ x: e.clientX, y: e.clientY });
         }
         const current = pointerEventToCanvasPoint(e, camera, zoom);
@@ -359,7 +411,35 @@ export const Canvas = () => {
             resizeSelectedLayer(current);
         } else if (canvasState.mode === CanvasMode.Pencil) {
             continueDrawing(current, e);
-        }
+        } else if (
+            e.buttons === 1 &&
+            canvasState.mode === CanvasMode.Inserting &&
+            startPanPoint &&
+            canvasState.layerType !== LayerType.Path &&
+            canvasState.layerType !== LayerType.Image
+          ) {
+            const point = pointerEventToCanvasPoint(e, camera, zoom);
+            const x = Math.min(point.x, startPanPoint.x);
+            const y = Math.min(point.y, startPanPoint.y);
+            const width = Math.abs(point.x - startPanPoint.x);
+            const height = Math.abs(point.y - startPanPoint.y);
+            setIsPanning(true);
+
+            switch (canvasState.layerType) {
+                case LayerType.Rectangle:
+                setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Rectangle, fill: { r: 0, g: 0, b:0, a: 0} });
+                break;
+                case LayerType.Ellipse:
+                setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Ellipse, fill: { r: 0, g: 0, b:0, a: 0} });
+                break;
+                case LayerType.Text:
+                setCurrentPreviewLayer({ x, y, width, height: 30, type: LayerType.Rectangle, fill: { r: 0, g: 0, b:0, a: 0} });
+                break;
+                case LayerType.Note:
+                setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Note, fill: { r: 0, g: 0, b:0, a: 0} });
+                break;
+            }
+            }
     },
         [
             continueDrawing,
@@ -373,75 +453,65 @@ export const Canvas = () => {
             rightClickPanning,
             setCamera,
             zoom,
-            startPanPoint
+            startPanPoint,
         ]);
-
-    const onPointerDown = useCallback((
-        e: React.PointerEvent,
-    ) => {
-        const point = pointerEventToCanvasPoint(e, camera, zoom);
-
-        if (e.button === 0) {
-            if (canvasState.mode === CanvasMode.Moving) {
-                setIsPanning(true);
-                setStartPanPoint({ x: e.clientX, y: e.clientY });
-                document.body.style.cursor = 'grabbing';
-            }
-
-            if (canvasState.mode === CanvasMode.Inserting) {
-                return;
-            }
-
-            if (canvasState.mode === CanvasMode.Moving) {
-                return;
-            }
-
-            if (canvasState.mode === CanvasMode.Pencil) {
-                startDrawing(point, e.pressure);
-                return;
-            }
-
-            setCanvasState({ origin: point, mode: CanvasMode.Pressing });
-        } else if (e.button === 2) {
-            setIsRightClickPanning(true);
-            setStartPanPoint({ x: e.clientX, y: e.clientY });
-            document.body.style.cursor = 'grabbing';
-        }
-    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom]);
 
     const onPointerUp = useCallback((e: React.PointerEvent) => {
         setIsRightClickPanning(false);
-        document.body.style.cursor = 'default';
         const point = pointerEventToCanvasPoint(e, camera, zoom);
-        if (canvasState.mode === CanvasMode.Moving) {
-            document.body.style.cursor = 'pointer';
-        }
+
         if (
             canvasState.mode === CanvasMode.None ||
             canvasState.mode === CanvasMode.Pressing
         ) {
-            setIsClickingLayer(false);
+            document.body.style.cursor = 'default';
             unselectLayers();
             setCanvasState({
                 mode: CanvasMode.None,
             });
         } else if (canvasState.mode === CanvasMode.Pencil) {
+            document.body.style.cursor = "url(/custom-cursors/pencil.svg) 8 8, auto";
             insertPath();
-          } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Image) {
+        } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Image) {
             setSelectedImage("");
             insertImage(LayerType.Image, point, selectedImage);
-          } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
-            insertLayer(canvasState.layerType, point);
-          } else if (canvasState.mode === CanvasMode.Moving) {
+        } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
+            const layerType = canvasState.layerType;
+            if (isPanning && currentPreviewLayer) {
+                insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height);
+                setCurrentPreviewLayer(null);
+            } else {
+                let width 
+                let height
+                if (layerType === LayerType.Text) {
+                    width = 130;
+                    height = 37;
+                    point.x = point.x - width/2
+                    point.y = point.y - height/2
+                    insertLayer(layerType, point, width, height)
+                } else {
+                    width = 80;
+                    height = 80;
+                    point.x = point.x - width/2
+                    point.y = point.y - height/2
+                    insertLayer(layerType, point, width, height);
+                }
+                setIsPanning(false);
+            }
+        } else if (canvasState.mode === CanvasMode.Moving) {
+            document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
             setIsPanning(false);
-          } else {
+        } else {
+            document.body.style.cursor = 'default';
             setCanvasState({
-              mode: CanvasMode.None,
+                mode: CanvasMode.None,
             });
-          }
+        }
 
     },
         [
+            isPanning,
+            currentPreviewLayer,
             setCanvasState,
             camera,
             canvasState,
@@ -456,8 +526,7 @@ export const Canvas = () => {
         ]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
-        setIsClickingLayer(true);
-
+        
         if (
             canvasState.mode === CanvasMode.Pencil ||
             canvasState.mode === CanvasMode.Inserting
@@ -480,118 +549,137 @@ export const Canvas = () => {
 
     const copySelectedLayers = useCallback(() => {
         const copied = new Map();
-        const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');      
         for (const id of selectedLayers) {
-          const layer = localStorageLiveLayers[id];
-          if (layer) {
-            // Deep copy the layer object
-            const copiedLayer = JSON.parse(JSON.stringify(layer));
-            copied.set(id, copiedLayer);
-          }
+            const layer = liveLayers[id];
+            if (layer) {
+                // Deep copy the layer object
+                const copiedLayer = JSON.parse(JSON.stringify(layer));
+                copied.set(id, copiedLayer);
+            }
         }
         setCopiedLayers(copied);
-      }, [selectedLayers]);
-      
+    }, [liveLayers, selectedLayers]);
 
-      const pasteCopiedLayers = useCallback((mousePosition: any) => {
+
+    const pasteCopiedLayers = useCallback((mousePosition: any) => {
         let minX = Infinity;
         let minY = Infinity;
         let maxX = -Infinity;
         let maxY = -Infinity;
         copiedLayers.forEach((layer) => {
-          minX = Math.min(minX, layer.x);
-          minY = Math.min(minY, layer.y);
-          maxX = Math.max(maxX, layer.x + layer.width);
-          maxY = Math.max(maxY, layer.y + layer.height);
+            minX = Math.min(minX, layer.x);
+            minY = Math.min(minY, layer.y);
+            maxX = Math.max(maxX, layer.x + layer.width);
+            maxY = Math.max(maxY, layer.y + layer.height);
         });
-    
+
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
 
         const offsetX = mousePosition.x - centerX;
         const offsetY = mousePosition.y - centerY;
-      
-        const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');        
-        const localStorageLiveLayersIds = JSON.parse(localStorage.getItem("layerIds") || '{}');        
+
+        const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');
+        const localStorageLiveLayersIds = JSON.parse(localStorage.getItem("layerIds") || '{}');
 
         const newSelection = [];
         const newLiveLayers = { ...localStorageLiveLayers };
         const newLiveLayerIds = [...localStorageLiveLayersIds];
         copiedLayers.forEach((layer) => {
-          const newId = nanoid();
-          newSelection.push(newId);
-          newLiveLayerIds.push(newId);
-          const clonedLayer = { ...layer };
-          clonedLayer.x = clonedLayer.x + offsetX;
-          clonedLayer.y = clonedLayer.y + offsetY;
-          newLiveLayers[newId] = clonedLayer;
+            const newId = nanoid();
+            newSelection.push(newId);
+            newLiveLayerIds.push(newId);
+            const clonedLayer = { ...layer };
+            clonedLayer.x = clonedLayer.x + offsetX;
+            clonedLayer.y = clonedLayer.y + offsetY;
+            newLiveLayers[newId] = clonedLayer;
         });
-      
+
         setLiveLayers(newLiveLayers);
         setLiveLayersId(newLiveLayerIds);
         localStorage.setItem("layers", JSON.stringify(newLiveLayers));
         localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
-      }, [copiedLayers]);
+    }, [copiedLayers]);
 
-      const mousePositionRef = useRef({ x: 0, y: 0 });
-
-      useEffect(() => {
+    useEffect(() => {
         const onMouseMove = (e: any) => {
-            if (e.buttons === 0) { // Ignore right-click events
-              mousePositionRef.current = pointerEventToCanvasPoint(e, camera, zoom);
+            if (e.buttons === 0) {
+                mousePositionRef.current = pointerEventToCanvasPoint(e, camera, zoom);
             }
-          };
-      
+        };
+
         document.addEventListener('mousemove', onMouseMove);
-      
+
         function onKeyDown(e: KeyboardEvent) {
-          switch (e.key.toLocaleLowerCase()) {
-            case "c": {
-              if (e.ctrlKey || e.metaKey) {
-                copySelectedLayers();
-              }
-              break;
-            }
-            case "v": {
-              if (e.ctrlKey || e.metaKey) {
-                if (isClickingLayer === false) {
-                  pasteCopiedLayers(mousePositionRef.current);
+            switch (e.key.toLocaleLowerCase()) {
+                case "c": {
+                    if (e.ctrlKey || e.metaKey) {
+                        copySelectedLayers();
+                    }
+                    break;
                 }
-              }
-              break;
+                case "v": {
+                    if (document.activeElement instanceof HTMLTextAreaElement) {
+                        break;
+                    }
+                    if (e.ctrlKey || e.metaKey) {
+                        if (copiedLayers.size > 0) {
+                            pasteCopiedLayers(mousePositionRef.current);
+                        }
+                    }
+                    break;
+                }
+                case "backspace":
+                    if (
+                      document.activeElement instanceof HTMLTextAreaElement ||
+                      (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === "true") ||
+                      selectedLayers.some(layerId => liveLayers[layerId].type === LayerType.Text)
+                    ) {
+                      break;
+                    }
+                    if (selectedLayers.length > 0) {
+                      const newLayers = { ...liveLayers };
+                      selectedLayers.forEach(id => {
+                        delete newLayers[id];
+                      });
+                      setLiveLayers(newLayers);
+                      setLiveLayersId(liveLayersId.filter(id => !selectedLayers.includes(id)));
+                      localStorage.setItem("layerIds", JSON.stringify(liveLayersId));
+                      localStorage.setItem("layers", JSON.stringify(newLayers));
+                      setSelectedLayers([]);
+                    }
             }
-          }
         }
-      
+
         document.addEventListener("keydown", onKeyDown);
-      
+
         return () => {
-          document.removeEventListener("keydown", onKeyDown);
-          document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener("keydown", onKeyDown);
+            document.removeEventListener('mousemove', onMouseMove);
         }
-      }, [copySelectedLayers, pasteCopiedLayers, isClickingLayer, camera, zoom]);
+    }, [copySelectedLayers, pasteCopiedLayers, camera, zoom, liveLayers, selectedLayers, copiedLayers, liveLayersId]);
 
     //   useEffect(() => {
     //     let lastFrameTime = performance.now();
     //     let frameCount = 0;
     //     let lastSecondTime = performance.now();
-      
+
     //     const loop = () => {
     //       const now = performance.now();
     //       lastFrameTime = now;
     //       frameCount++;
-      
+
     //       if (now - lastSecondTime >= 1000) {
     //         console.log(`FPS: ${frameCount}`);
     //         frameCount = 0;
     //         lastSecondTime = now;
     //       }
-      
+
     //       frameId = requestAnimationFrame(loop);
     //     };
-      
+
     //     let frameId = requestAnimationFrame(loop);
-      
+
     //     // Cleanup function
     //     return () => cancelAnimationFrame(frameId);
     //   }, []);
@@ -611,18 +699,26 @@ export const Canvas = () => {
     }, []);
 
     useEffect(() => {
-        if (canvasState.mode === CanvasMode.Moving) {
-            document.body.style.cursor = 'pointer';
+        if (canvasState.mode === CanvasMode.Inserting) {
+            if (canvasState.layerType === LayerType.Text) {
+                document.body.style.cursor = 'url(/custom-cursors/text-cursor.svg) 8 8, auto';
+            } else {
+                document.body.style.cursor = 'url(/custom-cursors/inserting.svg) 8 8, auto';
+            } 
+        } else if (canvasState.mode === CanvasMode.Pencil) {
+            document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 8 8, auto';
+        } else if (canvasState.mode === CanvasMode.Moving) {
+            document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
         } else {
             document.body.style.cursor = 'default';
         }
-    }, [canvasState.mode]);
+    }, [canvasState.mode, canvasState]);
 
     return (
         <main
             className="h-full w-full relative bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover' }}
         >
-            <Info 
+            <Info
                 selectedLayers={selectedLayers}
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
@@ -634,7 +730,9 @@ export const Canvas = () => {
                 canvasState={canvasState}
                 setCanvasState={setCanvasState}
             />
-            <SelectionTools
+            {canvasState.mode !== CanvasMode.Translating && (
+                <SelectionTools
+                lastUsedColor={lastUsedColor}
                 setLiveLayerIds={setLiveLayersId}
                 setLiveLayers={setLiveLayers}
                 liveLayerIds={liveLayersId}
@@ -644,6 +742,7 @@ export const Canvas = () => {
                 camera={camera}
                 setLastUsedColor={setLastUsedColor}
             />
+            )}
             <svg
                 id="canvas"
                 className="h-[100vh] w-[100vw]"
@@ -665,8 +764,14 @@ export const Canvas = () => {
                             key={layerId}
                             id={layerId}
                             onLayerPointerDown={onLayerPointerDown}
+                            onRefChange={setTextRef}
                         />
                     ))}
+                    {currentPreviewLayer && (
+                        <CurrentPreviewLayer 
+                            layer={currentPreviewLayer}                            
+                        />
+                    )}
                     <SelectionBox
                         liveLayers={liveLayers}
                         selectedLayers={selectedLayers}
@@ -674,7 +779,11 @@ export const Canvas = () => {
                     />
                     {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && (
                         <rect
-                            className="fill-blue-500/5 stroke-blue-500 stroke-1"
+                            style={{
+                                fill: 'rgba(59, 130, 246, 0.3)',
+                                stroke: '#3B82F6',
+                                strokeWidth: 0.5
+                            }}
                             x={Math.min(canvasState.origin.x, canvasState.current.x)}
                             y={Math.min(canvasState.origin.y, canvasState.current.y)}
                             width={Math.abs(canvasState.origin.x - canvasState.current.x)}

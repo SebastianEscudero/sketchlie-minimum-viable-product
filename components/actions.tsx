@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { exportToPdf } from "@/lib/utils";
 import { ConfirmModal } from "./confirm-delete-board";
-import { Layers } from "@/types/canvas";
 
 interface ActionsProps {
     children: React.ReactNode;
@@ -34,6 +33,8 @@ export const Actions = ({
     const onDelete = () => {
         setLiveLayers([]);
         setLiveLayersId([]);
+        localStorage.removeItem("layers");
+        localStorage.removeItem("layersId");
         toast.success("Nueva pizarra creada!");
     };
 

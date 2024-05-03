@@ -1,8 +1,8 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo } from "react";
 import { colorToCss } from "@/lib/utils";
-import { Layer, LayerType } from "@/types/canvas";
+import { LayerType } from "@/types/canvas";
 import { Text } from "@/components/canvas-objects/text";
 import { Ellipse } from "@/components/canvas-objects/ellipse";
 import { Rectangle } from "@/components/canvas-objects/rectangle";
@@ -16,6 +16,7 @@ interface LayerPreviewProps {
   selectionColor?: string;
   liveLayers: any;
   setLiveLayers: (layers: any) => void;
+  onRefChange?: (ref: React.RefObject<any>) => void;
 };
 
 export const LayerPreview = memo(({
@@ -24,8 +25,9 @@ export const LayerPreview = memo(({
   selectionColor,
   liveLayers,
   setLiveLayers,
+  onRefChange,
 }: LayerPreviewProps) => {
-
+  
   const layer = liveLayers[id];
 
   if (!layer) {
@@ -57,6 +59,7 @@ export const LayerPreview = memo(({
     case LayerType.Text:
       return (
         <Text
+          onRefChange={onRefChange}
           setLiveLayers={setLiveLayers}
           id={id}
           layer={layer}

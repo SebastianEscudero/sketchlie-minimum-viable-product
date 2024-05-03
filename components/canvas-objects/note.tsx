@@ -26,7 +26,7 @@ const calculateFontSize = (width: number, height: number) => {
 interface NoteProps {
   id: string;
   layer: NoteLayer;
-  onPointerDown: (e: React.PointerEvent, id: string) => void;
+  onPointerDown?: (e: React.PointerEvent, id: string) => void;
   selectionColor?: string;
 };
 
@@ -38,7 +38,9 @@ export const Note = ({
 }: NoteProps) => {
   const { x, y, width, height, fill, value: initialValue } = layer;
   const [value, setValue] = useState(initialValue);
-  
+  const fillColor = colorToCss(fill);
+  const isTransparent = fillColor === 'rgba(0,0,0,0)';
+
   useEffect(() => {
     const storedLayers = localStorage.getItem('layers');
     const layers = storedLayers ? JSON.parse(storedLayers) : {};
@@ -80,11 +82,12 @@ export const Note = ({
       y={y}
       width={width}
       height={height}
-      onPointerDown={(e) => onPointerDown(e, id)}
+      onPointerDown={onPointerDown ? (e) => onPointerDown(e, id) : undefined}
       style={{
-          outline: selectionColor ? `1px solid ${selectionColor}` : (colorToCss(fill) === "transparent" ? "1px solid #000" : "1px solid transparent"),
-          backgroundColor: fill ? colorToCss(fill) : "#000",
+        outline: `${selectionColor || (isTransparent ? "#000" : "transparent")} 1px solid`,
+        backgroundColor: fillColor,
       }}
+      className="shadow-md drop-shadow-xl"
     >
       <ContentEditable
         html={value || "Text"}
@@ -97,6 +100,7 @@ export const Note = ({
         style={{
           fontSize: calculateFontSize(width, height),
           color: fill ? getContrastingTextColor(fill) : "#000",
+          textWrap: "wrap",
         }}
         spellCheck={false}
       />

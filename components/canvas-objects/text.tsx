@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
+import React, { useEffect, useRef, useMemo } from 'react';
 import { TextLayer } from "@/types/canvas";
 import { cn, colorToCss } from "@/lib/utils";
 import { Kalam } from "next/font/google";
@@ -12,9 +11,10 @@ const font = Kalam({
 interface TextProps {
     id: string;
     layer: TextLayer;
-    onPointerDown: (e: React.PointerEvent, id: string) => void;
+    onPointerDown?: (e: React.PointerEvent, id: string) => void;
     selectionColor?: string;
-    setLiveLayers: (layers: any) => void;
+    setLiveLayers?: (layers: any) => void;
+    onRefChange?: (ref: React.RefObject<any>) => void;
 };
 
 export const Text = ({
@@ -23,79 +23,47 @@ export const Text = ({
     id,
     selectionColor,
     setLiveLayers,
+    onRefChange,
 }: TextProps) => {
     const { x, y, width, height, fill, value, textFontSize } = layer;
-    const initialFontsize = textFontSize
-    const [prevWidth, setPrevWidth] = useState(width);
-    const [prevHeight, setPrevHeight] = useState(height);
-    const [fontSize, setFontSize] = useState(initialFontsize);
     const textRef = useRef<any>(null);
     const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
+    const layers = useMemo(() => storedLayers ? JSON.parse(storedLayers) : {}, [storedLayers]);
+    const fillColor = colorToCss(layer.fill);
+    const isTransparent = fillColor === 'rgba(0,0,0,0)';
 
     const updateValue = (newValue: string) => {
+        console.log(newValue)
         const storedLayers = localStorage.getItem('layers');
         const layers = storedLayers ? JSON.parse(storedLayers) : {};
         if (layers[id]) {
             layers[id].value = newValue;
-            layers[id].textFontSize = fontSize;
             localStorage.setItem('layers', JSON.stringify(layers));
         }
         return layers;
     };
 
-    const handleContentChange = (e: ContentEditableEvent) => {
-        const newLayers = updateValue(e.target.value);
-        setLiveLayers(newLayers);
-    };
-
-    function handleKeyDown(e: React.KeyboardEvent) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            const selection = document.getSelection();
-            if (selection && selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const br = document.createElement('br');
-                range.insertNode(br);
-                range.setStartAfter(br);
-                range.setEndAfter(br);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        }
-    }
-
-    const handlePaste = async (e: React.ClipboardEvent) => {
-        e.preventDefault();
-        const text = await navigator.clipboard.readText();
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(document.createTextNode(text));
+    const handleContentChange = (newValue: string) => {
+        const newLayers = updateValue(newValue);
+        if (setLiveLayers) {
+            newLayers[id].height = textRef.current?.scrollHeight || height;
+            setLiveLayers(newLayers);
         }
     };
 
     useEffect(() => {
-        if (width !== prevWidth && height !== prevHeight) {
-            const widthScaleFactor = width / prevWidth;
-            const heightScaleFactor = height / prevHeight;
-            const newFontSize = fontSize * Math.min(widthScaleFactor, heightScaleFactor);
-            setFontSize(newFontSize);
-            if (layers[id]) {
-                layers[id].textFontSize = newFontSize;
-                localStorage.setItem('layers', JSON.stringify(layers));
-            }
-            setLiveLayers(layers);
-            console.log(localStorage.getItem('layers'));
+        if (onRefChange) {
+            onRefChange(textRef);
         }
-    }, [width, height, prevWidth, prevHeight]);
-    
+    }, [textRef, onRefChange]);
+
     useEffect(() => {
-        setPrevWidth(width);
-        setPrevHeight(height);
-    }, [width, height]);
-    
+        const newHeight = textRef.current?.scrollHeight || height;
+        layers[id].height = newHeight;
+        textRef.current.style.height = 'auto';
+        textRef.current.style.height = `${textRef.current.scrollHeight}px`;
+    }, [width, value, height, id, layers]);
+
     if (!fill) {
         return null;
     }
@@ -109,27 +77,37 @@ export const Text = ({
             style={{
                 outline: selectionColor ? `1px solid ${selectionColor}` : "none",
             }}
-            onPointerDown={(e) => onPointerDown(e, id)}
+            onPointerDown={onPointerDown ? (e) => onPointerDown(e, id) : undefined}
         >
-            <ContentEditable
+            <textarea
                 ref={textRef}
-                html={value || "Text"}
-                onChange={handleContentChange}
-                onPaste={handlePaste}
-                onKeyDown={handleKeyDown}
+                value={value || ""}
+                onChange={e => handleContentChange(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder='Type something...'
                 className={cn(
-                    "outline-none w-full h-full text-center justify-center items-center flex",
+                    "outline-none w-full h-full text-center flex",
                     font.className
                 )}
                 style={{
-                    fontSize: fontSize,
-                    color: colorToCss(fill) === "transparent" ? "#000" : colorToCss(fill),
+                    color: isTransparent ? "#000" : fillColor,
                     wordWrap: 'break-word',
                     overflowWrap: 'break-word',
                     wordBreak: 'break-all',
                     display: 'flex',
+                    backgroundColor: 'transparent',
+                    textAlign: 'left',
+                    resize: "none",
+                    overflowY: "hidden",
+                    overflowX: "hidden",
+                    userSelect: "none",
+                    fontSize: textFontSize,
+                    padding: 0.5,
+                    margin: 0,
                 }}
-                spellCheck={false}
             />
         </foreignObject>
     );
