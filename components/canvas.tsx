@@ -37,7 +37,7 @@ export const Canvas = () => {
     const mousePositionRef = useRef({ x: 0, y: 0 });
     const [liveLayers, setLiveLayers] = useState<Layers>({});
     const [liveLayersId, setLiveLayersId] = useState<string[]>([]);
-    const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
+    const selectedLayersRef = useRef<string[]>([]);
     const [zoom, setZoom] = useState(localStorage.getItem("zoom") ? parseFloat(localStorage.getItem("zoom") || '1') : 1);
     const [copiedLayers, setCopiedLayers] = useState<Map<string, any>>(new Map());
     const [pencilDraft, setPencilDraft] = useState<number[][]>([[]]);
@@ -158,7 +158,7 @@ export const Canvas = () => {
 
         const newLayers = { ...liveLayers };
 
-        selectedLayers.forEach(id => {
+        selectedLayersRef.current.forEach(id => {
             const layer = newLayers[id];
 
             if (layer) {
@@ -172,13 +172,13 @@ export const Canvas = () => {
         setLiveLayers(newLayers);
         localStorage.setItem("layers", JSON.stringify(newLayers));
         setCanvasState({ mode: CanvasMode.Translating, current: point });
-    }, [canvasState, liveLayers, selectedLayers]);
+    }, [canvasState, liveLayers, selectedLayersRef]);
 
     const unselectLayers = useCallback(() => {
-        if (selectedLayers.length > 0) {
-            setSelectedLayers([]);
+        if (selectedLayersRef.current.length > 0) {
+            selectedLayersRef.current = ([]);
         }
-    }, [selectedLayers]);
+    }, [selectedLayersRef]);
 
     const updateSelectionNet = useCallback((current: Point, origin: Point) => {
         setCanvasState({
@@ -194,7 +194,8 @@ export const Canvas = () => {
             current,
         );
 
-        setSelectedLayers(ids);
+        selectedLayersRef.current = ids;
+
     }, [liveLayers, liveLayersId]);
 
     const startMultiSelection = useCallback((
@@ -266,7 +267,7 @@ export const Canvas = () => {
         }
 
 
-        const layer = liveLayers[selectedLayers[0]];
+        const layer = liveLayers[selectedLayersRef.current[0]];
         let bounds
 
         if (layer.type === LayerType.Text) {
@@ -289,11 +290,11 @@ export const Canvas = () => {
 
         if (layer) {
             Object.assign(layer, bounds);
-            liveLayers[selectedLayers[0]] = layer;
+            liveLayers[selectedLayersRef.current[0]] = layer;
             setLiveLayers({ ...liveLayers });
             localStorage.setItem("layers", JSON.stringify(liveLayers));
         }
-    }, [canvasState, liveLayers, selectedLayers, textRef]);
+    }, [canvasState, liveLayers, selectedLayersRef, textRef]);
 
     const onResizeHandlePointerDown = useCallback((
         corner: Side,
@@ -536,20 +537,19 @@ export const Canvas = () => {
 
         e.stopPropagation();
 
-        const point = pointerEventToCanvasPoint(e, camera, zoom);
-        setCanvasState({ mode: CanvasMode.Translating, current: point });
+        setCanvasState({ mode: CanvasMode.Translating, current: mousePositionRef.current });
 
-        if (selectedLayers.includes(layerId)) {
+        if (selectedLayersRef.current.includes(layerId)) {
             return;
         }
 
-        setSelectedLayers([layerId]);
+        selectedLayersRef.current = [layerId];
 
-    }, [setCanvasState, camera, canvasState.mode, zoom, selectedLayers]);
+    }, [selectedLayersRef]);
 
     const copySelectedLayers = useCallback(() => {
         const copied = new Map();
-        for (const id of selectedLayers) {
+        for (const id of selectedLayersRef.current) {
             const layer = liveLayers[id];
             if (layer) {
                 // Deep copy the layer object
@@ -558,7 +558,7 @@ export const Canvas = () => {
             }
         }
         setCopiedLayers(copied);
-    }, [liveLayers, selectedLayers]);
+    }, [liveLayers, selectedLayersRef]);
 
 
     const pasteCopiedLayers = useCallback((mousePosition: any) => {
@@ -624,6 +624,7 @@ export const Canvas = () => {
                     }
                     if (e.ctrlKey || e.metaKey) {
                         if (copiedLayers.size > 0) {
+                            e.preventDefault();
                             pasteCopiedLayers(mousePositionRef.current);
                         }
                     }
@@ -637,16 +638,16 @@ export const Canvas = () => {
                     ) {
                       break;
                     }
-                    if (selectedLayers.length > 0) {
-                      const newLayers = { ...liveLayers };
-                      selectedLayers.forEach(id => {
-                        delete newLayers[id];
+                    if (selectedLayersRef.current.length > 0) {
+                        const newLayers = { ...liveLayers };
+                        selectedLayersRef.current.forEach(id => {
+                            delete newLayers[id];
                       });
                       setLiveLayers(newLayers);
-                      setLiveLayersId(liveLayersId.filter(id => !selectedLayers.includes(id)));
+                      setLiveLayersId(liveLayersId.filter(id => !selectedLayersRef.current.includes(id)));
                       localStorage.setItem("layerIds", JSON.stringify(liveLayersId));
                       localStorage.setItem("layers", JSON.stringify(newLayers));
-                      setSelectedLayers([]);
+                      selectedLayersRef.current = ([]);
                     }
             }
         }
@@ -657,7 +658,7 @@ export const Canvas = () => {
             document.removeEventListener("keydown", onKeyDown);
             document.removeEventListener('mousemove', onMouseMove);
         }
-    }, [copySelectedLayers, pasteCopiedLayers, camera, zoom, liveLayers, selectedLayers, copiedLayers, liveLayersId]);
+    }, [copySelectedLayers, pasteCopiedLayers, camera, zoom, liveLayers, selectedLayersRef, copiedLayers, liveLayersId]);
 
     //   useEffect(() => {
     //     let lastFrameTime = performance.now();
@@ -719,7 +720,7 @@ export const Canvas = () => {
             className="h-full w-full relative bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover' }}
         >
             <Info
-                selectedLayers={selectedLayers}
+                selectedLayers={selectedLayersRef.current}
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
             />
@@ -737,7 +738,7 @@ export const Canvas = () => {
                 setLiveLayers={setLiveLayers}
                 liveLayerIds={liveLayersId}
                 liveLayers={liveLayers}
-                selectedLayers={selectedLayers}
+                selectedLayers={selectedLayersRef.current}
                 zoom={zoom}
                 camera={camera}
                 setLastUsedColor={setLastUsedColor}
@@ -774,7 +775,7 @@ export const Canvas = () => {
                     )}
                     <SelectionBox
                         liveLayers={liveLayers}
-                        selectedLayers={selectedLayers}
+                        selectedLayers={selectedLayersRef.current}
                         onResizeHandlePointerDown={onResizeHandlePointerDown}
                     />
                     {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && (
