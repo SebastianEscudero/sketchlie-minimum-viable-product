@@ -76,12 +76,12 @@ export const Canvas = () => {
     const insertLayer = useCallback((layerType: LayerType, position: Point, width: number, height: number, center?: Point) => {
         const layerId = nanoid();
         let layer;
-    
+
         if (layerType === LayerType.Text) {
             if (width < 130) {
                 width = 130;
             }
-    
+
             layer = {
                 type: layerType,
                 x: position.x,
@@ -111,16 +111,16 @@ export const Canvas = () => {
                 fill: lastUsedColor,
             };
         }
-    
+
         const newLayers = { ...liveLayers, [layerId]: layer };
         const newLayerIds = [...liveLayersId, layerId];
-    
+
         setLiveLayersId(newLayerIds);
         setLiveLayers(newLayers as Layers);
-    
+
         localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
         localStorage.setItem("layers", JSON.stringify(newLayers));
-    
+
         setCanvasState({ mode: CanvasMode.None });
     }, [lastUsedColor, liveLayers, liveLayersId]);
 
@@ -160,17 +160,17 @@ export const Canvas = () => {
         if (canvasState.mode !== CanvasMode.Translating) {
             return;
         }
-    
+
         const offset = {
             x: (point.x - canvasState.current.x),
             y: (point.y - canvasState.current.y)
         };
-    
+
         const newLayers = { ...liveLayers };
-    
+
         selectedLayersRef.current.forEach(id => {
             const layer = newLayers[id];
-    
+
             if (layer) {
                 const newLayer = { ...layer };
                 newLayer.x += offset.x;
@@ -182,7 +182,7 @@ export const Canvas = () => {
                 newLayers[id] = newLayer;
             }
         });
-    
+
         setLiveLayers(newLayers);
         localStorage.setItem("layers", JSON.stringify(newLayers));
         setCanvasState({ mode: CanvasMode.Translating, current: point });
@@ -473,14 +473,14 @@ export const Canvas = () => {
                     setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Note, fill: { r: 0, g: 0, b: 0, a: 0 } });
                     break;
                 case LayerType.Arrow:
-                    setCurrentPreviewLayer({ 
-                        x: startPanPoint.x, 
-                        y: startPanPoint.y, 
+                    setCurrentPreviewLayer({
+                        x: startPanPoint.x,
+                        y: startPanPoint.y,
                         center: { x: startPanPoint.x + widthArrow / 2, y: startPanPoint.y + heightArrow / 2 },
-                        width: widthArrow, 
-                        height: heightArrow, 
-                        type: LayerType.Arrow, 
-                        fill: lastUsedColor 
+                        width: widthArrow,
+                        height: heightArrow,
+                        type: LayerType.Arrow,
+                        fill: lastUsedColor
                     });
             }
         }
@@ -779,7 +779,7 @@ export const Canvas = () => {
                 canvasState={canvasState}
                 setCanvasState={setCanvasState}
             />
-            {canvasState.mode !== CanvasMode.Translating && canvasState.mode !== CanvasMode.ArrowResizeHandler && (
+            {canvasState.mode !== CanvasMode.Translating && canvasState.mode !== CanvasMode.SelectionNet && canvasState.mode !== CanvasMode.ArrowResizeHandler && (
                 <SelectionTools
                     lastUsedColor={lastUsedColor}
                     setLiveLayerIds={setLiveLayersId}
