@@ -2,19 +2,24 @@
 
 import { memo, useMemo } from "react";
 
-import { Layers, LayerType, Side, XYWH } from "@/types/canvas";
+import { ArrowHandle, ArrowLayer, Layers, LayerType, Side, XYWH } from "@/types/canvas";
 import { useSelectionBounds } from "@/hooks/use-selection-bounds";
 
 interface SelectionBoxProps {
+  zoom: number;
   onResizeHandlePointerDown: (corner: Side, initialBounds: XYWH) => void;
+  onArrowResizeHandlePointerDown: (handle: ArrowHandle, initialBounds: XYWH) => void;
   selectedLayers: string[];
   liveLayers: Layers;
 };
 
-const HANDLE_WIDTH = 4;
+const HANDLE_SIZE = 6;
+const STROKE_WIDTH = 2.5;
 
 export const SelectionBox = memo(({
+  zoom,
   onResizeHandlePointerDown,
+  onArrowResizeHandlePointerDown,
   selectedLayers,
   liveLayers
 }: SelectionBoxProps) => {
@@ -41,19 +46,74 @@ export const SelectionBox = memo(({
     return false;
   }, [soleLayerId, liveLayers]);
 
+  const isArrowLayer = useMemo(() => {
+    if (soleLayerId) {
+      const soleLayer = liveLayers[soleLayerId];
+      return soleLayer && soleLayer.type === LayerType.Arrow;
+    }
+    return false;
+  }, [soleLayerId, liveLayers]);
+
   const bounds = useSelectionBounds(selectedLayers, liveLayers);
 
   if (!bounds) {
     return null;
   }
 
+  if (isArrowLayer && soleLayerId && selectedLayers.length === 1) {
+    const arrowLayer = liveLayers[soleLayerId] as ArrowLayer;
+    bounds.center = arrowLayer.center;
+    const handleRadius = HANDLE_SIZE / zoom;
+    const strokeWidth = STROKE_WIDTH / zoom;
+
+    return (
+      <>
+        <circle
+          className="fill-white stroke-blue-500"
+          cx={arrowLayer.x}
+          cy={arrowLayer.y}
+          r={handleRadius}
+          strokeWidth={strokeWidth}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onArrowResizeHandlePointerDown(ArrowHandle.start, bounds);
+          }}
+        />
+        <circle
+          className="fill-blue-500 stroke-white"
+          cx={arrowLayer?.center?.x}
+          cy={arrowLayer?.center?.y}
+          r={handleRadius}
+          strokeWidth={strokeWidth}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onArrowResizeHandlePointerDown(ArrowHandle.center, bounds);
+          }}
+        />
+        <circle
+          className="fill-white stroke-blue-500"
+          cx={arrowLayer.x + arrowLayer.width}
+          cy={arrowLayer.y + arrowLayer.height}
+          r={handleRadius}
+          strokeWidth={strokeWidth}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onArrowResizeHandlePointerDown(ArrowHandle.end, bounds);
+          }}
+        />
+      </>
+    );
+  }
+
+  const handleSize = HANDLE_SIZE / zoom;
+  const strokeWidth = STROKE_WIDTH / zoom / 1.5;
   return (
     <>
       <rect
         onContextMenu={handleRightClick}
         className="fill-transparent stroke-blue-500 pointer-events-none"
         style={{
-          strokeWidth: 0.7,
+          strokeWidth: strokeWidth,
           transform: `translate(${bounds.x}px, ${bounds.y}px)`,
         }}
         x={0}
@@ -69,16 +129,11 @@ export const SelectionBox = memo(({
             x={0}
             y={0}
             style={{
-              strokeWidth: 0.5,
+              strokeWidth: strokeWidth,
               cursor: "nwse-resize",
-              width: `${HANDLE_WIDTH}px`,
-              height: `${HANDLE_WIDTH}px`,
-              transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2}px,
-                  ${bounds.y - HANDLE_WIDTH / 2}px
-                )
-              `
+              width: `${handleSize}px`,
+              height: `${handleSize}px`,
+              transform: `translate(${bounds.x - handleSize / 2}px, ${bounds.y - handleSize / 2}px)`
             }}
             onPointerDown={(e) => {
               e.stopPropagation();
@@ -91,15 +146,12 @@ export const SelectionBox = memo(({
               x={0}
               y={0}
               style={{
+                strokeWidth: strokeWidth,
                 cursor: "ns-resize",
-                width: `${HANDLE_WIDTH}px`,
-                height: `${HANDLE_WIDTH}px`,
+                width: `${handleSize}px`,
+                height: `${handleSize}px`,
                 transform: `
-        translate(
-          ${bounds.x + bounds.width / 2 - HANDLE_WIDTH / 2}px, 
-          ${bounds.y - HANDLE_WIDTH / 2}px
-        )
-      `
+                  translate(${bounds.x + bounds.width / 2 - handleSize / 2}px, ${bounds.y - handleSize / 2}px)`
               }}
               onPointerDown={(e) => {
                 e.stopPropagation();
@@ -112,15 +164,12 @@ export const SelectionBox = memo(({
             x={0}
             y={0}
             style={{
-              strokeWidth: 0.5,
+              strokeWidth: strokeWidth,
               cursor: "nesw-resize",
-              width: `${HANDLE_WIDTH}px`,
-              height: `${HANDLE_WIDTH}px`,
+              width: `${handleSize}px`,
+              height: `${handleSize}px`,
               transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2 + bounds.width}px,
-                  ${bounds.y - HANDLE_WIDTH / 2}px
-                )`
+                translate(${bounds.x - handleSize / 2 + bounds.width}px, ${bounds.y - handleSize / 2}px)`
             }}
             onPointerDown={(e) => {
               e.stopPropagation();
@@ -132,15 +181,12 @@ export const SelectionBox = memo(({
             x={0}
             y={0}
             style={{
-              strokeWidth: 0.5,
+              strokeWidth: strokeWidth,
               cursor: "ew-resize",
-              width: `${HANDLE_WIDTH}px`,
-              height: `${HANDLE_WIDTH}px`,
+              width: `${handleSize}px`,
+              height: `${handleSize}px`,
               transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2 + bounds.width}px, 
-                  ${bounds.y + bounds.height / 2 - HANDLE_WIDTH / 2}px
-                )`
+                translate(${bounds.x - handleSize / 2 + bounds.width}px, ${bounds.y + bounds.height / 2 - handleSize / 2}px)`
             }}
             onPointerDown={(e) => {
               e.stopPropagation();
@@ -152,15 +198,12 @@ export const SelectionBox = memo(({
             x={0}
             y={0}
             style={{
-              strokeWidth: 0.5,
+              strokeWidth: strokeWidth,
               cursor: "nwse-resize",
-              width: `${HANDLE_WIDTH}px`,
-              height: `${HANDLE_WIDTH}px`,
+              width: `${handleSize}px`,
+              height: `${handleSize}px`,
               transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2 + bounds.width}px, 
-                  ${bounds.y - HANDLE_WIDTH / 2 + bounds.height}px
-                )`
+                translate(${bounds.x - handleSize / 2 + bounds.width}px, ${bounds.y - handleSize / 2 + bounds.height}px)`
             }}
             onPointerDown={(e) => {
               e.stopPropagation();
@@ -173,14 +216,9 @@ export const SelectionBox = memo(({
               x={0}
               y={0}
               style={{
-                cursor: "ns-resize",
-                width: `${HANDLE_WIDTH}px`,
-                height: `${HANDLE_WIDTH}px`,
-                transform: `
-        translate(
-          ${bounds.x + bounds.width / 2 - HANDLE_WIDTH / 2}px,
-          ${bounds.y - HANDLE_WIDTH / 2 + bounds.height}px
-        )`
+                  strokeWidth: strokeWidth,
+                  cursor: "ns-resize", width: `${handleSize}px`,height: `${handleSize}px`,
+                  transform: `translate(${bounds.x + bounds.width / 2 - handleSize / 2}px, ${bounds.y - handleSize / 2 + bounds.height}px)`
               }}
               onPointerDown={(e) => {
                 e.stopPropagation();
@@ -193,14 +231,14 @@ export const SelectionBox = memo(({
             x={0}
             y={0}
             style={{
-              strokeWidth: 0.5,
+              strokeWidth: strokeWidth,
               cursor: "nesw-resize",
-              width: `${HANDLE_WIDTH}px`,
-              height: `${HANDLE_WIDTH}px`,
+              width: `${handleSize}px`,
+              height: `${handleSize}px`,
               transform: `
                 translate(
-                  ${bounds.x - HANDLE_WIDTH / 2}px,
-                  ${bounds.y - HANDLE_WIDTH / 2 + bounds.height}px
+                  ${bounds.x - handleSize / 2}px,
+                  ${bounds.y - handleSize / 2 + bounds.height}px
                 )`
             }}
             onPointerDown={(e) => {
@@ -213,14 +251,14 @@ export const SelectionBox = memo(({
             x={0}
             y={0}
             style={{
-              strokeWidth: 0.5,
+              strokeWidth: strokeWidth,
               cursor: "ew-resize",
-              width: `${HANDLE_WIDTH}px`,
-              height: `${HANDLE_WIDTH}px`,
+              width: `${handleSize}px`,
+              height: `${handleSize}px`,
               transform: `
                 translate(
-                  ${bounds.x - HANDLE_WIDTH / 2}px,
-                  ${bounds.y - HANDLE_WIDTH / 2 + bounds.height / 2}px
+                  ${bounds.x - handleSize / 2}px,
+                  ${bounds.y - handleSize / 2 + bounds.height / 2}px
                 )`
             }}
             onPointerDown={(e) => {

@@ -33,7 +33,6 @@ export const Text = ({
     const isTransparent = fillColor === 'rgba(0,0,0,0)';
 
     const updateValue = (newValue: string) => {
-        console.log(newValue)
         const storedLayers = localStorage.getItem('layers');
         const layers = storedLayers ? JSON.parse(storedLayers) : {};
         if (layers[id]) {

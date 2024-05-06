@@ -9,6 +9,7 @@ import { Rectangle } from "@/components/canvas-objects/rectangle";
 import { Note } from "@/components/canvas-objects/note";
 import { Path } from "@/components/canvas-objects/path";
 import { InsertImage } from "./canvas-objects/image";
+import { Arrow } from "./canvas-objects/arrow";
 
 interface LayerPreviewProps {
   id: string;
@@ -29,7 +30,7 @@ export const LayerPreview = memo(({
 }: LayerPreviewProps) => {
   
   const layer = liveLayers[id];
-
+  
   if (!layer) {
     return null;
   }
@@ -89,6 +90,15 @@ export const LayerPreview = memo(({
         return (
           <InsertImage
             isUploading={false}
+            id={id}
+            layer={layer}
+            onPointerDown={onLayerPointerDown}
+            selectionColor={selectionColor}
+          />
+        );
+      case LayerType.Arrow:
+        return (
+          <Arrow
             id={id}
             layer={layer}
             onPointerDown={onLayerPointerDown}

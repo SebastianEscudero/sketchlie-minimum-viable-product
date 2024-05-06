@@ -34,17 +34,28 @@ export const SelectionTools = memo(({
   lastUsedColor,
 }: SelectionToolsProps) => {
 
-  let isText = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Text);
+  let isTextLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Text);
+  let isArrowLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Arrow);
   const [initialPosition, setInitialPosition] = useState<{x: number, y: number} | null>(null);
   const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
 
   useEffect(() => {
     if (selectionBounds) {
-      const x = (selectionBounds.width / 2 + selectionBounds.x) * zoom + camera.x;
-      const y = (selectionBounds.y) * zoom + camera.y;
+      let x, y;
+      if (isArrowLayer) {
+        const arrowLayer = liveLayers[selectedLayers[0]];
+        const centerY = arrowLayer.center.y
+        const startY = arrowLayer.y
+        const endY = arrowLayer.y + arrowLayer.height
+        x = (arrowLayer.width / 2 + arrowLayer.x) * zoom + camera.x;
+        y = Math.min(centerY, startY, endY) * zoom + camera.y;
+      } else {
+        x = (selectionBounds.width / 2 + selectionBounds.x) * zoom + camera.x;
+        y = (selectionBounds.y) * zoom + camera.y;
+      }
       setInitialPosition({x, y});
     }
-  }, [selectedLayers]);
+  }, [selectedLayers, isArrowLayer, selectionBounds, zoom, camera.x, camera.y, liveLayers]);
 
   const moveToFront = useCallback(() => {
     const indices: number[] = [];
@@ -149,7 +160,7 @@ export const SelectionTools = memo(({
           : undefined
       }}
     >
-      {isText && (
+      {isTextLayer && (
         <FontSizePicker
           selectedLayers={selectedLayers}
           setLiveLayers={setLiveLayers}

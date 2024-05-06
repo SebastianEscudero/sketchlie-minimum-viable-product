@@ -17,7 +17,19 @@ export enum LayerType {
   Text,
   Note,
   Image,
+  Arrow,
 };
+
+export type ArrowLayer = {
+  type: LayerType.Arrow;
+  x: number;
+  y: number;
+  center?: Point;
+  height: number;
+  width: number;
+  fill: Color;
+};
+
 
 export type RectangleLayer = {
   type: LayerType.Rectangle;
@@ -26,7 +38,6 @@ export type RectangleLayer = {
   height: number;
   width: number;
   fill: Color;
-  value?: string;
 };
 
 export type EllipseLayer = {
@@ -36,7 +47,6 @@ export type EllipseLayer = {
   height: number;
   width: number;
   fill: Color;
-  value?: string;
 };
 
 export type PathLayer = {
@@ -47,7 +57,6 @@ export type PathLayer = {
   width: number;
   fill: Color;
   points: number[][];
-  value?: string;
 };
 
 export type TextLayer = {
@@ -79,7 +88,6 @@ export type ImageLayer = {
   height: number;
   src: string;
   fill: Color;
-  value?: string;
 };
 
 export type Point = {
@@ -101,6 +109,12 @@ export enum Side {
   Right = 8,
 };
 
+export enum ArrowHandle {
+  start,
+  center,
+  end
+}
+
 export type CanvasState =
   | {
     mode: CanvasMode.None;
@@ -116,7 +130,7 @@ export type CanvasState =
   }
   | {
     mode: CanvasMode.Inserting,
-    layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note | LayerType.Image | LayerType.Path;
+    layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note | LayerType.Image | LayerType.Path | LayerType.Arrow;
   }
   | {
     mode: CanvasMode.Pencil,
@@ -131,6 +145,11 @@ export type CanvasState =
     corner: Side;
   }
   | {
+    mode: CanvasMode.ArrowResizeHandler,
+    initialBounds: XYWH;
+    handle: ArrowHandle;
+  }
+  | {
     mode: CanvasMode.Moving,
   }
 
@@ -141,14 +160,15 @@ export enum CanvasMode {
   Translating,
   Inserting,
   Resizing,
+  ArrowResizeHandler,
   Pencil,
   Moving
 };
 
-export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | NoteLayer | ImageLayer;
+export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | NoteLayer | ImageLayer | ArrowLayer;
 
 export interface Layers {
   [key: string]: Layer;
 }
 
-export type PreviewLayer = RectangleLayer | EllipseLayer | TextLayer | NoteLayer;
+export type PreviewLayer = RectangleLayer | EllipseLayer | TextLayer | NoteLayer | ArrowLayer;
