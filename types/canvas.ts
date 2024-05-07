@@ -78,6 +78,7 @@ export type NoteLayer = {
   width: number;
   fill: Color;
   value?: string;
+  textFontSize: number;
 };
 
 export type ImageLayer = {
@@ -87,7 +88,6 @@ export type ImageLayer = {
   width: number;
   height: number;
   src: string;
-  fill: Color;
 };
 
 export type Point = {

@@ -10,19 +10,6 @@ const font = Kalam({
   weight: ["400"],
 });
 
-const calculateFontSize = (width: number, height: number) => {
-  const maxFontSize = 96;
-  const scaleFactor = 0.15;
-  const fontSizeBasedOnHeight = height * scaleFactor;
-  const fontSizeBasedOnWidth = width * scaleFactor;
-
-  return Math.min(
-    fontSizeBasedOnHeight, 
-    fontSizeBasedOnWidth, 
-    maxFontSize
-  );
-}
-
 interface NoteProps {
   id: string;
   layer: NoteLayer;
@@ -36,7 +23,7 @@ export const Note = ({
   id,
   selectionColor,
 }: NoteProps) => {
-  const { x, y, width, height, fill, value: initialValue } = layer;
+  const { x, y, width, height, fill, value: initialValue, textFontSize } = layer;
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
   const isTransparent = fillColor === 'rgba(0,0,0,0)';
@@ -46,7 +33,7 @@ export const Note = ({
     const layers = storedLayers ? JSON.parse(storedLayers) : {};
     setValue(layers[id]?.value);
   }, [id]);
-  
+
   const updateValue = (newValue: string) => {
     const storedLayers = localStorage.getItem('layers');
     const layers = storedLayers ? JSON.parse(storedLayers) : {};
@@ -87,10 +74,10 @@ export const Note = ({
         outline: `${selectionColor || (isTransparent ? "#000" : "transparent")} 1px solid`,
         backgroundColor: fillColor,
       }}
-      className="shadow-md drop-shadow-xl"
+      className="shadow-md drop-shadow-xl flex items-center justify-center"
     >
       <ContentEditable
-        html={value || "Text"}
+        html={value || ""}
         onChange={handleContentChange}
         onPaste={handlePaste}
         className={cn(
@@ -98,9 +85,10 @@ export const Note = ({
           font.className
         )}
         style={{
-          fontSize: calculateFontSize(width, height),
+          fontSize: textFontSize,
           color: fill ? getContrastingTextColor(fill) : "#000",
           textWrap: "wrap",
+          lineHeight: value ? 'normal' : `${height}px`,
         }}
         spellCheck={false}
       />

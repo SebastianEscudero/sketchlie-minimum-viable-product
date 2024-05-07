@@ -1,3 +1,4 @@
+import { LayerType } from '@/types/canvas';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,8 +25,10 @@ export const FontSizePicker = ({
             const scaleFactor = fontSize / originalFontSize;
 
             newLayers[layerId].textFontSize = fontSize;
-            newLayers[layerId].width *= scaleFactor;
-            newLayers[layerId].height *= scaleFactor;
+            if (newLayers[layerId].type === LayerType.Text) {
+                newLayers[layerId].width *= scaleFactor;
+                newLayers[layerId].height *= scaleFactor;
+            }
         })
         setLiveLayers(newLayers);
         setInputFontSize(fontSize);

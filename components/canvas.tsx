@@ -76,10 +76,21 @@ export const Canvas = () => {
         }
 
         if (layerType === LayerType.Text) {
+
             if (width < 130) {
                 width = 130;
             }
 
+            layer = {
+                type: layerType,
+                x: position.x,
+                y: position.y,
+                height: height,
+                width: width,
+                fill: fillColor,
+                textFontSize: 12,
+            };
+        } else if (layerType === LayerType.Note) {
             layer = {
                 type: layerType,
                 x: position.x,
@@ -115,6 +126,11 @@ export const Canvas = () => {
 
         setLiveLayersId(newLayerIds);
         setLiveLayers(newLayers as Layers);
+
+
+        if (layer.type !== LayerType.Text) {
+            selectedLayersRef.current = [layerId];
+        }
 
         localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
         localStorage.setItem("layers", JSON.stringify(newLayers));
@@ -306,6 +322,9 @@ export const Canvas = () => {
         }
 
         if (layer) {
+            if (layer.type === LayerType.Note) {
+                bounds.textFontSize = layer.textFontSize;
+            }
             Object.assign(layer, bounds);
             liveLayers[selectedLayersRef.current[0]] = layer;
             setLiveLayers({ ...liveLayers });
@@ -469,7 +488,7 @@ export const Canvas = () => {
                     setCurrentPreviewLayer({ x, y, width, height: 30, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 } });
                     break;
                 case LayerType.Note:
-                    setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Note, fill: { r: 255, g: 249, b: 177, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Note, fill: { r: 255, g: 249, b: 177, a: 1 } });
                     break;
                 case LayerType.Arrow:
                     setCurrentPreviewLayer({

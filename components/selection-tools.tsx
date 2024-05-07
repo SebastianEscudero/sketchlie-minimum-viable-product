@@ -30,7 +30,9 @@ export const SelectionTools = memo(({
   liveLayerIds,
 }: SelectionToolsProps) => {
 
-  let isTextLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Text);
+  let isTextOrNoteLayer = selectedLayers.every(layer => 
+    liveLayers[layer]?.type === LayerType.Text || liveLayers[layer]?.type === LayerType.Note
+  );
   let isArrowLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Arrow);
   const layers = selectedLayers.map(id => liveLayers[id]);
   const [initialPosition, setInitialPosition] = useState<{x: number, y: number} | null>(null);
@@ -155,7 +157,7 @@ export const SelectionTools = memo(({
           : undefined
       }}
     >
-      {isTextLayer && (
+      {isTextOrNoteLayer && (
         <FontSizePicker
           selectedLayers={selectedLayers}
           setLiveLayers={setLiveLayers}
