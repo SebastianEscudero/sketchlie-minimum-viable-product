@@ -55,7 +55,7 @@ export const SelectionTools = memo(({
       }
       setInitialPosition({x, y});
     }
-  }, [selectedLayers, isArrowLayer, selectionBounds, zoom, camera.x, camera.y, liveLayers]);
+  }, [selectedLayers, camera, zoom]);
 
   const moveToFront = useCallback(() => {
     const indices: number[] = [];

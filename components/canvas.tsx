@@ -779,7 +779,7 @@ export const Canvas = () => {
                 canvasState={canvasState}
                 setCanvasState={setCanvasState}
             />
-            {canvasState.mode !== CanvasMode.Translating && canvasState.mode !== CanvasMode.SelectionNet && canvasState.mode !== CanvasMode.ArrowResizeHandler && (
+            {canvasState.mode === CanvasMode.None &&(
                 <SelectionTools
                     lastUsedColor={lastUsedColor}
                     setLiveLayerIds={setLiveLayersId}
