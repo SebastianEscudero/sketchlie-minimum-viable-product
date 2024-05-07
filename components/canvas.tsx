@@ -53,13 +53,6 @@ export const Canvas = () => {
     const [startPanPoint, setStartPanPoint] = useState({ x: 0, y: 0 });
     const [selectedImage, setSelectedImage] = useState<string>("");
     const [currentPreviewLayer, setCurrentPreviewLayer] = useState<PreviewLayer | null>(null);
-    const [lastUsedColor, setLastUsedColor] = useState<Color>({
-        r: 0,
-        g: 0,
-        b: 0,
-        a: 0,
-    });
-
     useEffect(() => {
         const storedLayers = localStorage.getItem('layers');
         const storedLayerIds = localStorage.getItem('layerIds');
@@ -75,7 +68,12 @@ export const Canvas = () => {
 
     const insertLayer = useCallback((layerType: LayerType, position: Point, width: number, height: number, center?: Point) => {
         const layerId = nanoid();
+
         let layer;
+        let fillColor = { r: 0, g: 0, b: 0, a: 0 }
+        if (layerType === LayerType.Note) {
+            fillColor = { r: 255, g: 249, b: 177, a: 1 }
+        }
 
         if (layerType === LayerType.Text) {
             if (width < 130) {
@@ -88,7 +86,7 @@ export const Canvas = () => {
                 y: position.y,
                 height: height,
                 width: width,
-                fill: lastUsedColor,
+                fill: fillColor,
                 textFontSize: 12,
             };
         } else if (layerType === LayerType.Arrow) {
@@ -99,7 +97,7 @@ export const Canvas = () => {
                 center: center,
                 height: height,
                 width: width,
-                fill: lastUsedColor,
+                fill: fillColor,
             };
         } else {
             layer = {
@@ -108,7 +106,7 @@ export const Canvas = () => {
                 y: position.y,
                 height: height,
                 width: width,
-                fill: lastUsedColor,
+                fill: fillColor,
             };
         }
 
@@ -122,7 +120,7 @@ export const Canvas = () => {
         localStorage.setItem("layers", JSON.stringify(newLayers));
 
         setCanvasState({ mode: CanvasMode.None });
-    }, [lastUsedColor, liveLayers, liveLayersId]);
+    }, [liveLayers, liveLayersId]);
 
     const insertImage = useCallback((
         layerType: LayerType.Image,
@@ -255,7 +253,7 @@ export const Canvas = () => {
         }
 
         const id = nanoid();
-        liveLayers[id] = penPointsToPathLayer(pencilDraft, lastUsedColor);
+        liveLayers[id] = penPointsToPathLayer(pencilDraft, { r: 0, g: 0, b: 0, a: 0 });
 
         const liveLayerIds = JSON.parse(localStorage.getItem("layerIds") || '[]');
         liveLayerIds.push(id);
@@ -267,7 +265,7 @@ export const Canvas = () => {
         localStorage.setItem("layerIds", JSON.stringify(liveLayerIds));
 
         setCanvasState({ mode: CanvasMode.Pencil });
-    }, [lastUsedColor, pencilDraft, liveLayers]);
+    }, [pencilDraft, liveLayers]);
 
     const startDrawing = useCallback((point: Point, pressure: number) => {
         const pencilDraft = [[point.x, point.y, pressure]];
@@ -471,7 +469,7 @@ export const Canvas = () => {
                     setCurrentPreviewLayer({ x, y, width, height: 30, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 } });
                     break;
                 case LayerType.Note:
-                    setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Note, fill: { r: 0, g: 0, b: 0, a: 0 } });
+                    setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Note, fill: { r: 255, g: 249, b: 177, a: 1 } });
                     break;
                 case LayerType.Arrow:
                     setCurrentPreviewLayer({
@@ -481,7 +479,7 @@ export const Canvas = () => {
                         width: widthArrow,
                         height: heightArrow,
                         type: LayerType.Arrow,
-                        fill: lastUsedColor
+                        fill: { r: 0, g: 0, b: 0, a: 0 }
                     });
             }
         }
@@ -782,7 +780,6 @@ export const Canvas = () => {
             />
             {canvasState.mode === CanvasMode.None &&(
                 <SelectionTools
-                    lastUsedColor={lastUsedColor}
                     setLiveLayerIds={setLiveLayersId}
                     setLiveLayers={setLiveLayers}
                     liveLayerIds={liveLayersId}
@@ -790,7 +787,6 @@ export const Canvas = () => {
                     selectedLayers={selectedLayersRef.current}
                     zoom={zoom}
                     camera={camera}
-                    setLastUsedColor={setLastUsedColor}
                 />
             )}
             <svg
@@ -845,7 +841,7 @@ export const Canvas = () => {
                     {pencilDraft != null && pencilDraft.length > 0 && (
                         <Path
                             points={pencilDraft}
-                            fill={colorToCss(lastUsedColor)}
+                            fill={colorToCss({r: 0 ,g: 0, b: 0, a: 0,})}
                             x={0}
                             y={0}
                         />
