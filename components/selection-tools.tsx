@@ -12,30 +12,27 @@ import { FontSizePicker } from "./font-picker";
 
 interface SelectionToolsProps {
   camera: Camera;
-  setLastUsedColor: (color: Color) => void;
   zoom: number;
   selectedLayers: string[];
   liveLayers: any;
   liveLayerIds: string[];
   setLiveLayers: (layers: any) => void;
   setLiveLayerIds: (ids: string[]) => void;
-  lastUsedColor: Color;
 };
 
 export const SelectionTools = memo(({
   camera,
-  setLastUsedColor,
   zoom,
   selectedLayers,
   setLiveLayers,
   setLiveLayerIds,
   liveLayers,
   liveLayerIds,
-  lastUsedColor,
 }: SelectionToolsProps) => {
 
   let isTextLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Text);
   let isArrowLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Arrow);
+  const layers = selectedLayers.map(id => liveLayers[id]);
   const [initialPosition, setInitialPosition] = useState<{x: number, y: number} | null>(null);
   const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
 
@@ -115,9 +112,7 @@ export const SelectionTools = memo(({
     localStorage.setItem("layerIds", JSON.stringify(arr));
   }, [selectedLayers, setLiveLayerIds, liveLayerIds]);
   
-  const setFill = useCallback((fill: Color) => {
-    setLastUsedColor(fill);
-  
+  const setFill = useCallback((fill: Color) => {  
     setLiveLayers((prevLayers: any) => {
       const newLayers = { ...prevLayers };
   
@@ -131,7 +126,7 @@ export const SelectionTools = memo(({
       localStorage.setItem("layers", JSON.stringify(newLayers));
       return newLayers;
     });
-  }, [selectedLayers, setLastUsedColor, setLiveLayers]);
+  }, [selectedLayers, setLiveLayers]);
 
   const deleteLayers = useCallback(() => {  
     selectedLayers.forEach((id) => {
@@ -168,7 +163,7 @@ export const SelectionTools = memo(({
         />
       )}
       <ColorPicker
-        lastUsedColor={lastUsedColor}
+        layers={layers}
         onChange={setFill}
       />
       <Hint label="Bring to front">
