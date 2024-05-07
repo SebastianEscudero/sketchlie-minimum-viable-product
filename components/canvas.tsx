@@ -591,7 +591,7 @@ export const Canvas = () => {
 
         selectedLayersRef.current = [layerId];
 
-    }, [selectedLayersRef]);
+    }, [selectedLayersRef, canvasState]);
 
     const copySelectedLayers = useCallback(() => {
         const copied = new Map();
