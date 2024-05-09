@@ -27,9 +27,9 @@ export const ColorPicker = ({
       <ColorButton color={colorButtonColor} onClick={() => setIsOpen(!isOpen)}/>
       {isOpen && (
         <div
-          className="origin-top-right absolute right-0 mt-2 w-[200px] rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+          className="origin-top-right absolute right-0 mt-2 w-[210px] rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
         >
-          <div className="p-3 grid grid-cols-4 gap-3" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+          <div className="p-3 grid grid-cols-4 gap-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
             <ColorButton color={{ r: 0, g: 0, b: 0, a: 0 }} onClick={onChange} />
             <ColorButton color={{ r: 255, g: 255, b: 255, a: 1 }} onClick={onChange} />
             <ColorButton color={{ r: 243, g: 82, b: 35, a: 1 }} onClick={onChange} />
