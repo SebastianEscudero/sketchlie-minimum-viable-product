@@ -38,6 +38,7 @@ import { CurrentPreviewLayer } from "./current-preview-layer";
 export const Canvas = () => {
     const mousePositionRef = useRef({ x: 0, y: 0 });
     const [liveLayers, setLiveLayers] = useState<Layers>({});
+    const [initialPinchDistance, setInitialPinchDistance] = useState<number | null>(null);
     const [liveLayersId, setLiveLayersId] = useState<string[]>([]);
     const selectedLayersRef = useRef<string[]>([]);
     const [zoom, setZoom] = useState(localStorage.getItem("zoom") ? parseFloat(localStorage.getItem("zoom") || '1') : 1);
@@ -371,6 +372,38 @@ export const Canvas = () => {
             window.removeEventListener('wheel', handleWheel);
         };
     }, []);
+
+    const onTouchMove = useCallback((e: React.TouchEvent) => {
+        if (e.touches.length !== 2) return;
+    
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+    
+        const distance = Math.hypot(
+            touch1.clientX - touch2.clientX,
+            touch1.clientY - touch2.clientY
+        );
+    
+        if (initialPinchDistance === null) {
+            setInitialPinchDistance(distance);
+            return;
+        }
+    
+        let newZoom = zoom;
+        if (distance > initialPinchDistance) {
+            newZoom = Math.min(zoom * 1.1, 3.5);
+        } else {
+            newZoom = Math.max(zoom / 1.1, 0.3);
+        }
+    
+        const zoomFactor = newZoom / zoom;
+        const newX = (touch1.clientX + touch2.clientX) / 2 - ((touch1.clientX + touch2.clientX) / 2 - camera.x) * zoomFactor;
+        const newY = (touch1.clientY + touch2.clientY) / 2 - ((touch1.clientY + touch2.clientY) / 2 - camera.y) * zoomFactor;
+    
+        setZoom(newZoom);
+        setCamera({ x: newX, y: newY });
+        setInitialPinchDistance(distance);
+    }, [zoom, camera, initialPinchDistance]);
 
     const onWheel = useCallback((e: React.WheelEvent) => {
         const svgRect = e.currentTarget.getBoundingClientRect();
@@ -731,32 +764,7 @@ export const Canvas = () => {
             document.removeEventListener('mousemove', onMouseMove);
         }
     }, [copySelectedLayers, pasteCopiedLayers, camera, zoom, liveLayers, selectedLayersRef, copiedLayers, liveLayersId]);
-
-    //   useEffect(() => {
-    //     let lastFrameTime = performance.now();
-    //     let frameCount = 0;
-    //     let lastSecondTime = performance.now();
-
-    //     const loop = () => {
-    //       const now = performance.now();
-    //       lastFrameTime = now;
-    //       frameCount++;
-
-    //       if (now - lastSecondTime >= 1000) {
-    //         console.log(`FPS: ${frameCount}`);
-    //         frameCount = 0;
-    //         lastSecondTime = now;
-    //       }
-
-    //       frameId = requestAnimationFrame(loop);
-    //     };
-
-    //     let frameId = requestAnimationFrame(loop);
-
-    //     // Cleanup function
-    //     return () => cancelAnimationFrame(frameId);
-    //   }, []);
-
+    
     useEffect(() => {
         if (typeof document !== 'undefined') {
             const handleContextMenu = (e: MouseEvent) => {
@@ -817,6 +825,7 @@ export const Canvas = () => {
             <svg
                 id="canvas"
                 className="h-[100vh] w-[100vw]"
+                onTouchMove={onTouchMove}
                 onWheel={onWheel}
                 onPointerMove={onPointerMove}
                 onPointerDown={onPointerDown}
