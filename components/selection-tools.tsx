@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useSelectionBounds } from "@/hooks/use-selection-bounds";
 import { ColorPicker } from "./color-picker";
 import { FontSizePicker } from "./font-picker";
+import { OutlineColorPicker } from "./outline-color-picker";
+import { ArrowHeadSelection } from "./arrow-head-selection";
 
 
 interface SelectionToolsProps {
@@ -33,10 +35,15 @@ export const SelectionTools = memo(({
   let isTextOrNoteLayer = selectedLayers.every(layer => 
     liveLayers[layer]?.type === LayerType.Text || liveLayers[layer]?.type === LayerType.Note
   );
+
+  let isRectangleOrEllipseOrNoteLayer = selectedLayers.every(layer =>
+    liveLayers[layer]?.type === LayerType.Rectangle || liveLayers[layer]?.type === LayerType.Ellipse || liveLayers[layer]?.type === LayerType.Note
+  );
   let isArrowLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Arrow);
   const layers = selectedLayers.map(id => liveLayers[id]);
   const [initialPosition, setInitialPosition] = useState<{x: number, y: number} | null>(null);
   const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
+
 
   useEffect(() => {
     if (selectionBounds) {
@@ -130,6 +137,26 @@ export const SelectionTools = memo(({
     });
   }, [selectedLayers, setLiveLayers]);
 
+  const setOutlineFill = useCallback((outlineFill: Color) => {  
+    setLiveLayers((prevLayers: any) => {
+      const newLayers = { ...prevLayers };
+      const updatedIds: any = [];
+      const updatedLayers: any = [];
+  
+      selectedLayers.forEach((id) => {
+        const layer = newLayers[id];
+        if (layer) {
+          newLayers[id].outlineFill = outlineFill;
+          updatedIds.push(id);
+          updatedLayers.push(newLayers[id]);
+        }
+      });
+
+      localStorage.setItem("layers", JSON.stringify(newLayers));
+      return newLayers;
+    });
+  }, [selectedLayers, setLiveLayers]);
+
   const deleteLayers = useCallback(() => {  
     selectedLayers.forEach((id) => {
       delete liveLayers[id];
@@ -157,11 +184,24 @@ export const SelectionTools = memo(({
           : undefined
       }}
     >
+      {isArrowLayer && (
+        <ArrowHeadSelection 
+          selectedLayers={selectedLayers}
+          setLiveLayers={setLiveLayers}
+          liveLayers={liveLayers}
+        />
+      )}
       {isTextOrNoteLayer && (
         <FontSizePicker
           selectedLayers={selectedLayers}
           setLiveLayers={setLiveLayers}
           liveLayers={liveLayers}
+        />
+      )}
+      {isRectangleOrEllipseOrNoteLayer && (
+        <OutlineColorPicker
+          layers={layers}
+          onChange={setOutlineFill}
         />
       )}
       <ColorPicker

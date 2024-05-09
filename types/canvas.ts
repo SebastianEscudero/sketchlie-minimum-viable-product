@@ -28,8 +28,9 @@ export type ArrowLayer = {
   height: number;
   width: number;
   fill: Color;
+  startArrowHead: ArrowHead;
+  endArrowHead: ArrowHead;
 };
-
 
 export type RectangleLayer = {
   type: LayerType.Rectangle;
@@ -38,6 +39,7 @@ export type RectangleLayer = {
   height: number;
   width: number;
   fill: Color;
+  outlineFill: Color | null;
 };
 
 export type EllipseLayer = {
@@ -47,6 +49,7 @@ export type EllipseLayer = {
   height: number;
   width: number;
   fill: Color;
+  outlineFill: Color | null;
 };
 
 export type PathLayer = {
@@ -59,6 +62,15 @@ export type PathLayer = {
   points: number[][];
 };
 
+export type ImageLayer = {
+  type: LayerType.Image;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  src: string;
+};
+
 export type TextLayer = {
   type: LayerType.Text;
   x: number;
@@ -66,8 +78,9 @@ export type TextLayer = {
   height: number;
   width: number;
   fill: Color;
+  outlineFill: Color | null;
   value?: string;
-  textFontSize: number;
+  textFontSize: number
 };
 
 export type NoteLayer = {
@@ -77,17 +90,9 @@ export type NoteLayer = {
   height: number;
   width: number;
   fill: Color;
+  outlineFill: Color | null;
   value?: string;
   textFontSize: number;
-};
-
-export type ImageLayer = {
-  type: LayerType.Image;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  src: string;
 };
 
 export type Point = {
@@ -169,6 +174,11 @@ export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | Note
 
 export interface Layers {
   [key: string]: Layer;
+}
+
+export enum ArrowHead {
+  None = "None",
+  Triangle = "Triangle",
 }
 
 export type PreviewLayer = RectangleLayer | EllipseLayer | TextLayer | NoteLayer | ArrowLayer;
