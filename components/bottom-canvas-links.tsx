@@ -19,7 +19,7 @@ export const BottomCanvasLinks = () => {
         <div className="absolute bottom-2 left-2 bg-white rounded-md px-1.5 h-12 flex items-center shadow-md">
             <Hint label="Tutorial" side="bottom" sideOffset={10}>
                 <Button asChild variant="board" className="px-2 font-bold">
-                    <Link href="https://www.sketchlie.com/blog/pizarra-online-tutorial" target="_blank">
+                    <Link href="https://www.sketchlie.com/blog/pizarra-online-tutorial/" target="_blank">
                         Ayuda
                     </Link>
                 </Button>
@@ -35,27 +35,27 @@ export const BottomCanvasLinks = () => {
                 </Hint>
                 <DropdownMenuContent align="start" className="px-3 py-2 font-semibold space-y-1">
                     <DropdownMenuItem>
-                        <Link href="https://www.sketchlie.com" target="_blank">
+                        <Link href="https://www.sketchlie.com/" target="_blank">
                             Website
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
-                        <Link href="https://www.twitter.com/sketchlieteam" target="_blank">
+                        <Link href="https://www.twitter.com/sketchlieteam/" target="_blank">
                             Twitter
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
-                        <Link href="https://www.linkedin.com/company/sketchlie" target="_blank">
+                        <Link href="https://www.linkedin.com/company/sketchlie/" target="_blank">
                             Linkedin
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
-                        <Link href="https://www.instagram.com/sketchlieux" target="_blank">
+                        <Link href="https://www.instagram.com/sketchlieux/" target="_blank">
                             Instagram
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
-                        <Link href="https://www.facebook.com/people/Sketchlie/61558420300592" target="_blank">
+                        <Link href="https://www.facebook.com/people/Sketchlie/61558420300592/" target="_blank">
                             Facebook
                         </Link>
                     </DropdownMenuItem>
