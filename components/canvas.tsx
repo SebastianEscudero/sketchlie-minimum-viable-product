@@ -601,7 +601,9 @@ export const Canvas = () => {
 
         if (
             canvasState.mode === CanvasMode.Pencil ||
-            canvasState.mode === CanvasMode.Inserting
+            canvasState.mode === CanvasMode.Inserting ||
+            canvasState.mode === CanvasMode.Moving ||
+            e.button !== 0
         ) {
             return;
         }
