@@ -13,11 +13,19 @@ const config = {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
     },
     extend: {
+      backgroundImage: theme => ({
+        'hero-background': "url(/hero-bg.png)",
+        'blur-background': "url(/placeholders/landingcta.jpg)",
+      }),
+      fontFamily: {
+        'roobert': ['Roobert PRO', 'Helvetica', 'Arial', 'sans-serif'],
+        'figtree': ['Figtree', 'sans-serif']
+      },
+      scale: {
+        '102': '1.02',
+      },
       colors: {
         'custom-blue': '#2E4DE6',
         'custom-blue-dark': '#1C3CB6',
@@ -74,9 +82,16 @@ const config = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      screens: {
+        'xs': '320px',
+        "2xl": "1400px",
+        '3xl': '1800px',
+      },
     },
+    
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config
+
 
 export default config
