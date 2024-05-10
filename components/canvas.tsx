@@ -544,6 +544,7 @@ export const Canvas = () => {
             insertImage(LayerType.Image, point, selectedImage);
         } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
             const layerType = canvasState.layerType;
+            setIsPanning(false);
             if (isPanning && currentPreviewLayer) {
                 if (layerType === LayerType.Arrow && currentPreviewLayer.type === LayerType.Arrow) {
                     insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height, currentPreviewLayer.center)
@@ -568,7 +569,6 @@ export const Canvas = () => {
                     point.y = point.y - height / 2
                     insertLayer(layerType, point, width, height);
                 }
-                setIsPanning(false);
             }
         } else if (canvasState.mode === CanvasMode.Moving) {
             document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
