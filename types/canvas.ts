@@ -60,6 +60,7 @@ export type PathLayer = {
   width: number;
   fill: Color;
   points: number[][];
+  strokeSize?: number;
 };
 
 export type ImageLayer = {
@@ -134,6 +135,9 @@ export type CanvasState =
     current: Point;
   }
   | {
+    mode: CanvasMode.Eraser,
+  }
+  | {
     mode: CanvasMode.Inserting,
     layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note | LayerType.Image | LayerType.Path | LayerType.Arrow;
   }
@@ -167,6 +171,7 @@ export enum CanvasMode {
   Resizing,
   ArrowResizeHandler,
   Pencil,
+  Eraser,
   Moving
 };
 

@@ -10,6 +10,7 @@ import { ColorPicker } from "./color-picker";
 import { FontSizePicker } from "./font-picker";
 import { OutlineColorPicker } from "./outline-color-picker";
 import { ArrowHeadSelection } from "./arrow-head-selection";
+import { PathStokeSizeSelection } from "./stroke-size-selection";
 
 
 interface SelectionToolsProps {
@@ -32,14 +33,15 @@ export const SelectionTools = memo(({
   liveLayerIds,
 }: SelectionToolsProps) => {
 
-  let isTextOrNoteLayer = selectedLayers.every(layer => 
+  const isTextOrNoteLayer = selectedLayers.every(layer => 
     liveLayers[layer]?.type === LayerType.Text || liveLayers[layer]?.type === LayerType.Note
   );
 
-  let isRectangleOrEllipseOrNoteLayer = selectedLayers.every(layer =>
+  const isRectangleOrEllipseOrNoteLayer = selectedLayers.every(layer =>
     liveLayers[layer]?.type === LayerType.Rectangle || liveLayers[layer]?.type === LayerType.Ellipse || liveLayers[layer]?.type === LayerType.Note
   );
-  let isArrowLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Arrow);
+  const isArrowLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Arrow);
+  const isPathLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Path);
   const layers = selectedLayers.map(id => liveLayers[id]);
   const [initialPosition, setInitialPosition] = useState<{x: number, y: number} | null>(null);
   const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
@@ -177,13 +179,20 @@ export const SelectionTools = memo(({
       className="absolute p-1 rounded-sm bg-white shadow-sm border flex select-none gap-x-2 items-center"
       style={{
         transform: initialPosition
-          ? `translate(
-              calc(${initialPosition.x}px - 50%),
-              calc(${initialPosition.y - 30}px - 100%)
-            )`
-          : undefined
+        ? `translate(
+        calc(${initialPosition.x}px - 50%),
+        ${initialPosition.y < 130 ? `calc(${initialPosition.y + selectionBounds.height * zoom + 30}px)` : `calc(${initialPosition.y - 30}px - 100%)`}
+      )`
+        : undefined
       }}
     >
+      {isPathLayer && (
+        <PathStokeSizeSelection
+          selectedLayers={selectedLayers}
+          setLiveLayers={setLiveLayers}
+          liveLayers={liveLayers}
+        />
+      )}
       {isArrowLayer && (
         <ArrowHeadSelection 
           selectedLayers={selectedLayers}

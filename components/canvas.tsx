@@ -53,6 +53,9 @@ export const Canvas = () => {
     const [startPanPoint, setStartPanPoint] = useState({ x: 0, y: 0 });
     const [selectedImage, setSelectedImage] = useState<string>("");
     const [currentPreviewLayer, setCurrentPreviewLayer] = useState<PreviewLayer | null>(null);
+    const [pathColor, setPathColor] = useState({ r: 1, g: 1, b: 1, a: 1 });
+    const [pathStrokeSize, setPathStrokeSize] = useState(4);
+
     useEffect(() => {
         const storedLayers = localStorage.getItem('layers');
         const storedLayerIds = localStorage.getItem('layerIds');
@@ -273,7 +276,7 @@ export const Canvas = () => {
         }
 
         const id = nanoid();
-        liveLayers[id] = penPointsToPathLayer(pencilDraft, { r: 0, g: 0, b: 0, a: 0 });
+        liveLayers[id] = penPointsToPathLayer(pencilDraft, pathColor, pathStrokeSize);
 
         const liveLayerIds = JSON.parse(localStorage.getItem("layerIds") || '[]');
         liveLayerIds.push(id);
@@ -400,6 +403,9 @@ export const Canvas = () => {
         const point = pointerEventToCanvasPoint(e, camera, zoom);
 
         if (e.button === 0) {
+            if (canvasState.mode === CanvasMode.Eraser) {
+                return;
+            }
             if (canvasState.mode === CanvasMode.Moving) {
                 setIsPanning(true);
                 setStartPanPoint({ x: e.clientX, y: e.clientY });
@@ -489,7 +495,7 @@ export const Canvas = () => {
                     setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Ellipse, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
                     break;
                 case LayerType.Text:
-                    setCurrentPreviewLayer({ x, y, width, height: 20, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: null });
+                    setCurrentPreviewLayer({ x, y, width, height: 20, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 39, g: 142, b: 237, a: 1 } })
                     break;
                 case LayerType.Note:
                     setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Note, fill: { r: 255, g: 249, b: 177, a: 1 }, outlineFill: { r: 0, g: 0, b: 0, a: 0 } });
@@ -537,8 +543,11 @@ export const Canvas = () => {
                 mode: CanvasMode.None,
             });
         } else if (canvasState.mode === CanvasMode.Pencil) {
-            document.body.style.cursor = "url(/custom-cursors/pencil.svg) 2 18, auto";
+            document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 8 8, auto';
             insertPath();
+        } else if (canvasState.mode === CanvasMode.Eraser) {
+            document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
+            return;
         } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Image) {
             setSelectedImage("");
             insertImage(LayerType.Image, point, selectedImage);
@@ -597,12 +606,24 @@ export const Canvas = () => {
             insertImage,
         ]);
 
+        const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
+            if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
+                const newLiveLayers = { ...liveLayers };
+                delete newLiveLayers[layerId];
+                localStorage.setItem("layers", JSON.stringify(newLiveLayers));
+                localStorage.setItem("layerIds", JSON.stringify(liveLayersId.filter(id => id !== layerId)));
+                setLiveLayers(newLiveLayers);
+                setLiveLayersId(liveLayersId.filter(id => id !== layerId));
+            }
+        }, [canvasState.mode, liveLayers, liveLayersId, setLiveLayers]);
+
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
 
         if (
             canvasState.mode === CanvasMode.Pencil ||
             canvasState.mode === CanvasMode.Inserting ||
             canvasState.mode === CanvasMode.Moving ||
+            canvasState.mode === CanvasMode.Eraser ||
             e.button !== 0
         ) {
             return;
@@ -782,6 +803,8 @@ export const Canvas = () => {
             }
         } else if (canvasState.mode === CanvasMode.Pencil) {
             document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 2 18, auto';
+        } else if (canvasState.mode === CanvasMode.Eraser) {
+            document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
         } else if (canvasState.mode === CanvasMode.Moving) {
             document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
         } else {
@@ -801,7 +824,9 @@ export const Canvas = () => {
             <SketchlieBlock />
             <BottomCanvasLinks />
             <Toolbar
-                onImageSelect={setSelectedImage}
+                pathStrokeSize={pathStrokeSize}
+                setPathColor={setPathColor}
+                setPathStrokeSize={setPathStrokeSize}
                 canvasState={canvasState}
                 setCanvasState={setCanvasState}
             />
@@ -832,6 +857,7 @@ export const Canvas = () => {
                 >
                     {liveLayersId.map((layerId: any) => (
                         <LayerPreview
+                            onPathErase={onPathErase}
                             setLiveLayers={setLiveLayers}
                             liveLayers={liveLayers}
                             key={layerId}
@@ -868,9 +894,10 @@ export const Canvas = () => {
                     {pencilDraft != null && pencilDraft.length > 0 && (
                         <Path
                             points={pencilDraft}
-                            fill={colorToCss({r: 0 ,g: 0, b: 0, a: 0,})}
+                            fill={colorToCss(pathColor)}
                             x={0}
                             y={0}
+                            strokeSize={pathStrokeSize}
                         />
                     )}
                 </g>

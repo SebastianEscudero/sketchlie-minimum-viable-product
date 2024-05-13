@@ -38,7 +38,8 @@ export const ArrowHeadSelection = ({
                 endArrowHead: newLayers[layerId].endArrowHead,
             });
         });
-
+        
+        localStorage.setItem("layers", JSON.stringify(newLayers));
         setLiveLayers(newLayers);
         setIsOpen(false);
     }
@@ -58,6 +59,8 @@ export const ArrowHeadSelection = ({
                 endArrowHead: newLayers[layerId].endArrowHead,
             });
         });
+
+        localStorage.setItem("layers", JSON.stringify(newLayers));
         setLiveLayers(newLayers);
     }
 
