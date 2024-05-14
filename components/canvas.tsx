@@ -635,10 +635,6 @@ export const Canvas = () => {
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
 
-        if (e.pointerType === 'touch') {
-            setActiveTouches(activeTouches => activeTouches + 1);
-        }
-
         if (
             canvasState.mode === CanvasMode.Pencil ||
             canvasState.mode === CanvasMode.Inserting ||
@@ -647,6 +643,10 @@ export const Canvas = () => {
             e.button !== 0
         ) {
             return;
+        }
+
+        if (e.pointerType === 'touch') {
+            setActiveTouches(activeTouches => activeTouches + 1);
         }
 
         e.stopPropagation();
