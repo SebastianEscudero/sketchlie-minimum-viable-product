@@ -377,12 +377,14 @@ export const Canvas = () => {
         };
     }, []);
 
-    const onWheel = useCallback((e: any) => {
+    const onWheel = useCallback((e: React.WheelEvent) => {
         const svgRect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - svgRect.left;
         const y = e.clientY - svgRect.top;
     
-        if (e.ctrlKey) {
+        const isMouseWheel = Math.abs(e.deltaY) % 100 === 0 && e.deltaX === 0;
+
+        if (isMouseWheel || e.ctrlKey) {
             // Zooming
             let newZoom = zoom;
             if (e.deltaY < 0) {
