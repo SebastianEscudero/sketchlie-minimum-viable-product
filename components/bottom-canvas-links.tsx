@@ -16,11 +16,11 @@ const TabSeparator = () => {
 
 export const BottomCanvasLinks = () => {
     return (
-        <div className="absolute bottom-2 left-2 bg-white rounded-md p-1.5 h-[52px] flex items-center shadow-md">
+        <div className="absolute bottom-2 left-2 bg-white rounded-md p-1.5 h-[30px] flex items-center shadow-md">
             <Hint label="Tutorial" side="bottom" sideOffset={10}>
                 <Button asChild variant="board" className="px-2 font-bold">
                     <Link href="https://www.sketchlie.com/blog/pizarra-online-tutorial/" target="_blank">
-                        <CircleHelp />
+                        <CircleHelp className="h-4 w-4"/>
                     </Link>
                 </Button>
             </Hint>
@@ -29,7 +29,7 @@ export const BottomCanvasLinks = () => {
                 <Hint label="¿Quiénes somos?" side="bottom" sideOffset={10}>
                     <Button asChild variant="board" className="px-2">
                         <DropdownMenuTrigger className="flex outline-none">
-                            <ChevronsUp className="w-5 h-5"/>
+                            <ChevronsUp className="w-4 h-4"/>
                         </DropdownMenuTrigger>
                     </Button>
                 </Hint>

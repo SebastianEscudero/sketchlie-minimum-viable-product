@@ -651,15 +651,16 @@ export const Canvas = () => {
     }, [selectedLayersRef, canvasState]);
 
     const onTouchDown = useCallback((e: React.TouchEvent) => {
-        setActiveTouches(activeTouches =>Math.min(2,  activeTouches + 1));
+        setActiveTouches(e.touches.length);
     }, []);
-
+    
     const onTouchUp = useCallback((e: React.TouchEvent) => {
-        setActiveTouches(activeTouches => Math.max(0, activeTouches - 1));
+        setActiveTouches(e.changedTouches.length);
     }, []);
 
     const onTouchMove = useCallback((e: React.TouchEvent) => {
         e.preventDefault();
+        setActiveTouches(e.touches.length);
 
         if (e.touches.length < 2) {
             setPinchStartDist(null);
