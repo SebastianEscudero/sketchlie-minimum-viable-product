@@ -83,7 +83,8 @@ const config = {
         "accordion-up": "accordion-up 0.2s ease-out",
       },
       screens: {
-        'xs': '320px',
+        'h-600': {'raw': '(min-height: 545px)'},
+        'xs': '450px',
         "2xl": "1400px",
         '3xl': '1800px',
       },

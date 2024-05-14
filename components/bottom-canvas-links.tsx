@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Hint } from "@/components/hint";
-import { ChevronsUp } from "lucide-react";
+import { ChevronsUp, CircleHelp } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 const TabSeparator = () => {
@@ -16,11 +16,11 @@ const TabSeparator = () => {
 
 export const BottomCanvasLinks = () => {
     return (
-        <div className="absolute bottom-2 left-2 bg-white rounded-md px-1.5 h-12 flex items-center shadow-md">
+        <div className="absolute bottom-2 left-2 bg-white rounded-md p-1.5 h-[52px] flex items-center shadow-md">
             <Hint label="Tutorial" side="bottom" sideOffset={10}>
                 <Button asChild variant="board" className="px-2 font-bold">
                     <Link href="https://www.sketchlie.com/blog/pizarra-online-tutorial/" target="_blank">
-                        Ayuda
+                        <CircleHelp />
                     </Link>
                 </Button>
             </Hint>

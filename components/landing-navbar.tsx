@@ -21,7 +21,7 @@ export const LandingNavbar = () => {
                                 src="/logo.svg"    
                             />
                         </div>
-                        <p className="text-2xl font-bold text-[#38322C] font-roobert">
+                        <p className="text-2xl font-bold text-[#38322C] font-roobert xs:block hidden">
                             Sketchlie
                         </p>
                     </Link>

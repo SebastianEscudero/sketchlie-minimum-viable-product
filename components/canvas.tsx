@@ -40,7 +40,8 @@ export const Canvas = () => {
     const [liveLayers, setLiveLayers] = useState<Layers>({});
     const [liveLayersId, setLiveLayersId] = useState<string[]>([]);
     const selectedLayersRef = useRef<string[]>([]);
-    const [zoom, setZoom] = useState(localStorage.getItem("zoom") ? parseFloat(localStorage.getItem("zoom") || '1') : 1);
+    // const [zoom, setZoom] = useState(localStorage.getItem("zoom") ? parseFloat(localStorage.getItem("zoom") || '1') : 1);
+    const [zoom, setZoom] = useState(1);
     const [copiedLayers, setCopiedLayers] = useState<Map<string, any>>(new Map());
     const [pencilDraft, setPencilDraft] = useState<number[][]>([[]]);
     const [textRef, setTextRef] = useState<any>(null);
@@ -49,10 +50,12 @@ export const Canvas = () => {
     });
     const [camera, setCamera] = useState<Camera>(localStorage.getItem("camera") ? JSON.parse(localStorage.getItem("camera") || '{"x":0,"y":0}') : { x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
+    const [pinchStartDist, setPinchStartDist] = useState<number | null>(null);
     const [rightClickPanning, setIsRightClickPanning] = useState(false);
     const [startPanPoint, setStartPanPoint] = useState({ x: 0, y: 0 });
     const [selectedImage, setSelectedImage] = useState<string>("");
     const [currentPreviewLayer, setCurrentPreviewLayer] = useState<PreviewLayer | null>(null);
+    const [activeTouches, setActiveTouches] = useState(0);
     const [pathColor, setPathColor] = useState({ r: 1, g: 1, b: 1, a: 1 });
     const [pathStrokeSize, setPathStrokeSize] = useState(4);
 
@@ -400,6 +403,12 @@ export const Canvas = () => {
     const onPointerDown = useCallback((
         e: React.PointerEvent,
     ) => {
+        e.preventDefault();
+
+        if (e.pointerType === 'touch') {
+            setActiveTouches(activeTouches => activeTouches + 1);
+        }
+
         const point = pointerEventToCanvasPoint(e, camera, zoom);
 
         if (e.button === 0) {
@@ -437,6 +446,11 @@ export const Canvas = () => {
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
+
+        if (activeTouches > 1) {
+            return;
+        }
+
         if (rightClickPanning) {
             const newCameraPosition = {
                 x: camera.x + e.clientX - startPanPoint.x,
@@ -528,9 +542,11 @@ export const Canvas = () => {
             setCamera,
             zoom,
             startPanPoint,
+            pinchStartDist,
         ]);
 
     const onPointerUp = useCallback((e: React.PointerEvent) => {
+        setActiveTouches(activeTouches => activeTouches - 1);
         setIsRightClickPanning(false);
         const point = pointerEventToCanvasPoint(e, camera, zoom);
         if (
@@ -606,18 +622,22 @@ export const Canvas = () => {
             insertImage,
         ]);
 
-        const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
-            if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
-                const newLiveLayers = { ...liveLayers };
-                delete newLiveLayers[layerId];
-                localStorage.setItem("layers", JSON.stringify(newLiveLayers));
-                localStorage.setItem("layerIds", JSON.stringify(liveLayersId.filter(id => id !== layerId)));
-                setLiveLayers(newLiveLayers);
-                setLiveLayersId(liveLayersId.filter(id => id !== layerId));
-            }
-        }, [canvasState.mode, liveLayers, liveLayersId, setLiveLayers]);
+    const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
+        if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
+            const newLiveLayers = { ...liveLayers };
+            delete newLiveLayers[layerId];
+            localStorage.setItem("layers", JSON.stringify(newLiveLayers));
+            localStorage.setItem("layerIds", JSON.stringify(liveLayersId.filter(id => id !== layerId)));
+            setLiveLayers(newLiveLayers);
+            setLiveLayersId(liveLayersId.filter(id => id !== layerId));
+        }
+    }, [canvasState.mode, liveLayers, liveLayersId, setLiveLayers]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
+
+        if (e.pointerType === 'touch') {
+            setActiveTouches(activeTouches => activeTouches + 1);
+        }
 
         if (
             canvasState.mode === CanvasMode.Pencil ||
@@ -631,7 +651,8 @@ export const Canvas = () => {
 
         e.stopPropagation();
 
-        setCanvasState({ mode: CanvasMode.Translating, current: mousePositionRef.current });
+        const point = pointerEventToCanvasPoint(e, camera, zoom);
+        setCanvasState({ mode: CanvasMode.Translating, current: point });
 
         if (selectedLayersRef.current.includes(layerId)) {
             return;
@@ -640,6 +661,48 @@ export const Canvas = () => {
         selectedLayersRef.current = [layerId];
 
     }, [selectedLayersRef, canvasState]);
+
+    const handleMobileMove = useCallback((e: React.TouchEvent) => {
+        if (e.touches.length < 2) {
+            setPinchStartDist(null);
+            return;
+        }
+        
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+
+        const dist = Math.hypot(
+            touch1.clientX - touch2.clientX,
+            touch1.clientY - touch2.clientY
+        );
+    
+        const svgRect = e.currentTarget.getBoundingClientRect();
+        const x = ((touch1.clientX + touch2.clientX) / 2) - svgRect.left;
+        const y = ((touch1.clientY + touch2.clientY) / 2) - svgRect.top;
+
+        if (pinchStartDist === null) {
+            setPinchStartDist(dist);
+            return;
+        }
+    
+        let newZoom = zoom;
+        if (dist > pinchStartDist) {
+            newZoom = Math.min(zoom * 1.1, 3.5);
+        } else {
+            newZoom = Math.max(zoom / 1.1, 0.3);
+        }
+    
+        const zoomFactor = newZoom / zoom;
+        const newX = x - (x - camera.x) * zoomFactor;
+        const newY = y - (y - camera.y) * zoomFactor;
+    
+        setZoom(newZoom);
+        localStorage.setItem("zoom", newZoom.toString());
+        setCamera({ x: newX, y: newY });
+        localStorage.setItem("camera", JSON.stringify({ x: newX, y: newY }));
+    
+        setPinchStartDist(dist);
+    }, [zoom, pinchStartDist, camera]);
 
     const copySelectedLayers = useCallback(() => {
         const copied = new Map();
@@ -755,31 +818,6 @@ export const Canvas = () => {
         }
     }, [copySelectedLayers, pasteCopiedLayers, camera, zoom, liveLayers, selectedLayersRef, copiedLayers, liveLayersId]);
 
-    //   useEffect(() => {
-    //     let lastFrameTime = performance.now();
-    //     let frameCount = 0;
-    //     let lastSecondTime = performance.now();
-
-    //     const loop = () => {
-    //       const now = performance.now();
-    //       lastFrameTime = now;
-    //       frameCount++;
-
-    //       if (now - lastSecondTime >= 1000) {
-    //         console.log(`FPS: ${frameCount}`);
-    //         frameCount = 0;
-    //         lastSecondTime = now;
-    //       }
-
-    //       frameId = requestAnimationFrame(loop);
-    //     };
-
-    //     let frameId = requestAnimationFrame(loop);
-
-    //     // Cleanup function
-    //     return () => cancelAnimationFrame(frameId);
-    //   }, []);
-
     useEffect(() => {
         if (typeof document !== 'undefined') {
             const handleContextMenu = (e: MouseEvent) => {
@@ -813,9 +851,8 @@ export const Canvas = () => {
     }, [canvasState.mode, canvasState]);
 
     return (
-        <main
-            className="h-full w-full relative bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover' }}
-        >
+        <main className="fixed h-full w-full bg-neutral-100 touch-none overscroll-none" style={{ backgroundImage: "url(/dot-grid.png)", backgroundSize: 'cover', WebkitOverflowScrolling: 'touch' }}>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
             <Info
                 selectedLayers={selectedLayersRef.current}
                 setLiveLayers={setLiveLayers}
@@ -830,7 +867,7 @@ export const Canvas = () => {
                 canvasState={canvasState}
                 setCanvasState={setCanvasState}
             />
-            {canvasState.mode === CanvasMode.None &&(
+            {canvasState.mode === CanvasMode.None && (
                 <SelectionTools
                     setLiveLayerIds={setLiveLayersId}
                     setLiveLayers={setLiveLayers}
@@ -844,6 +881,7 @@ export const Canvas = () => {
             <svg
                 id="canvas"
                 className="h-[100vh] w-[100vw]"
+                onTouchMove={handleMobileMove}
                 onWheel={onWheel}
                 onPointerMove={onPointerMove}
                 onPointerDown={onPointerDown}
@@ -878,7 +916,7 @@ export const Canvas = () => {
                         onResizeHandlePointerDown={onResizeHandlePointerDown}
                         onArrowResizeHandlePointerDown={onArrowResizeHandlePointerDown}
                     />
-                    {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && (
+                    {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && activeTouches < 2 && (
                         <rect
                             style={{
                                 fill: 'rgba(59, 130, 246, 0.3)',
