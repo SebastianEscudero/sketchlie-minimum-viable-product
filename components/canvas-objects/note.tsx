@@ -80,7 +80,7 @@ export const Note = ({
         borderColor: `${selectionColor || colorToCss(outlineFill || fill)}`,
         backgroundColor: fillColor,
       }}
-      className="shadow-md drop-shadow-xl flex items-center justify-center"
+      className="shadow-md drop-shadow-xl flex items-center justify-center border-[1.5px] border-spacing-3"
     >
       <ContentEditable
         innerRef={noteRef}

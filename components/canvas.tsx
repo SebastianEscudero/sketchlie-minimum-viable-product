@@ -651,7 +651,7 @@ export const Canvas = () => {
     }, [selectedLayersRef, canvasState]);
 
     const onTouchDown = useCallback((e: React.TouchEvent) => {
-        setActiveTouches(activeTouches => activeTouches + 1);
+        setActiveTouches(activeTouches =>Math.min(2,  activeTouches + 1));
     }, []);
 
     const onTouchUp = useCallback((e: React.TouchEvent) => {
