@@ -382,7 +382,7 @@ export const Canvas = () => {
         const x = e.clientX - svgRect.left;
         const y = e.clientY - svgRect.top;
     
-        if ('wheelDelta' in e && e.wheelDelta % 120 === 0 || e.ctrlKey) {
+        if (e.deltaY % 100 === 0 || e.ctrlKey) {
             // Zooming
             let newZoom = zoom;
             if (e.deltaY < 0) {
