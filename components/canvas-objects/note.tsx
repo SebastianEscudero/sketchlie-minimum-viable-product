@@ -3,7 +3,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
 import { NoteLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -26,6 +26,7 @@ export const Note = ({
   const { x, y, width, height, fill, outlineFill, value: initialValue, textFontSize } = layer;
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
+  const noteRef = useRef<any>(null);
 
   useEffect(() => {
     const storedLayers = localStorage.getItem('layers');
@@ -58,6 +59,12 @@ export const Note = ({
     }
   };
 
+  useEffect(() => {
+    if (noteRef.current) {
+        noteRef.current.focus();
+    }
+  }, []);
+
   if (!fill) {
     return null;
   }
@@ -70,12 +77,13 @@ export const Note = ({
       height={height}
       onPointerDown={onPointerDown ? (e) => onPointerDown(e, id) : undefined}
       style={{
-        outline: `${selectionColor || colorToCss(outlineFill || fill)} solid 2px`,
+        borderColor: `${selectionColor || colorToCss(outlineFill || fill)}`,
         backgroundColor: fillColor,
       }}
       className="shadow-md drop-shadow-xl flex items-center justify-center"
     >
       <ContentEditable
+        innerRef={noteRef}
         html={value || ""}
         onChange={handleContentChange}
         onPaste={handlePaste}
@@ -88,6 +96,7 @@ export const Note = ({
           color: fill ? getContrastingTextColor(fill) : "#000",
           textWrap: "wrap",
           lineHeight: value ? 'normal' : `${height}px`,
+          WebkitUserSelect: 'auto'
         }}
         spellCheck={false}
       />
