@@ -696,27 +696,15 @@ export const Canvas = () => {
         const x = ((touch1.clientX + touch2.clientX) / 2) - svgRect.left;
         const y = ((touch1.clientY + touch2.clientY) / 2) - svgRect.top;
     
-        if (pinchStartDist === null || startPanPoint === null) {
+        if (pinchStartDist === null) {
             setPinchStartDist(dist);
             setStartPanPoint({ x, y });
             return;
         }
     
-        const touch1Direction = {
-            x: touch1.clientX - startPanPoint.x,
-            y: touch1.clientY - startPanPoint.y,
-        };
+        const distChange = Math.abs(dist - pinchStartDist);
     
-        const touch2Direction = {
-            x: touch2.clientX - startPanPoint.x,
-            y: touch2.clientY - startPanPoint.y,
-        };
-    
-        const sameDirection =
-            Math.sign(touch1Direction.x) === Math.sign(touch2Direction.x) &&
-            Math.sign(touch1Direction.y) === Math.sign(touch2Direction.y);
-    
-        if (!sameDirection) { // Zooming
+        if (distChange > 10) { // Zooming
             let newZoom = zoom;
             if (dist > pinchStartDist) {
                 newZoom = Math.min(zoom * 1.1, 3.5);
@@ -732,7 +720,7 @@ export const Canvas = () => {
             localStorage.setItem("zoom", newZoom.toString());
             setCamera({ x: newX, y: newY });
             localStorage.setItem("camera", JSON.stringify({ x: newX, y: newY }));
-        } else { // Panning
+        } else if (startPanPoint) { // Panning
             const dx = x - startPanPoint.x;
             const dy = y - startPanPoint.y;
     
