@@ -377,12 +377,12 @@ export const Canvas = () => {
         };
     }, []);
 
-    const onWheel = useCallback((e: React.WheelEvent) => {
+    const onWheel = useCallback((e: any) => {
         const svgRect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - svgRect.left;
         const y = e.clientY - svgRect.top;
     
-        if (e.ctrlKey) {
+        if ('wheelDelta' in e && e.wheelDelta % 120 === 0 || e.ctrlKey) {
             // Zooming
             let newZoom = zoom;
             if (e.deltaY < 0) {
@@ -882,8 +882,6 @@ export const Canvas = () => {
             document.body.style.cursor = 'default';
         }
     }, [canvasState.mode, canvasState]);
-
-    console.log(activeTouches, 'activeTouches')
 
     return (
         <main className="fixed h-full w-full bg-neutral-100 touch-none overscroll-none" 
