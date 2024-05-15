@@ -84,7 +84,7 @@ export const SketchlieBlock = () => {
                             variant="auth"
                             className="w-full mt-2 text-[16px]"
                         >
-                            <Link href="https://www.sketchlie.com/auth/register" className="flex items-center justify-center">
+                            <Link href="https://www.sketchlie.com/auth/register" className="flex items-center justify-center" target="_blank">
                                 Empieza a colaborar hoy
                                 <ArrowRight className="w-5 h-5 ml-2"/>
                             </Link>
