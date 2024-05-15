@@ -41,13 +41,16 @@ export const Canvas = () => {
     const [liveLayersId, setLiveLayersId] = useState<string[]>([]);
     const selectedLayersRef = useRef<string[]>([]);
     const [zoom, setZoom] = useState(localStorage.getItem("zoom") ? parseFloat(localStorage.getItem("zoom") || '1') : 1);
+    const [camera, setCamera] = useState<Camera>(localStorage.getItem("camera") ? JSON.parse(localStorage.getItem("camera") || '{"x":0,"y":0}') : { x: 0, y: 0 });
+    const zoomRef = useRef(zoom);
+    const cameraRef = useRef(camera);
     const [copiedLayers, setCopiedLayers] = useState<Map<string, any>>(new Map());
     const [pencilDraft, setPencilDraft] = useState<number[][]>([[]]);
     const [textRef, setTextRef] = useState<any>(null);
     const [canvasState, setCanvasState] = useState<CanvasState>({
         mode: CanvasMode.None,
     });
-    const [camera, setCamera] = useState<Camera>(localStorage.getItem("camera") ? JSON.parse(localStorage.getItem("camera") || '{"x":0,"y":0}') : { x: 0, y: 0 });
+    const canvasStateRef = useRef(canvasState);
     const [isPanning, setIsPanning] = useState(false);
     const [pinchStartDist, setPinchStartDist] = useState<number | null>(null);
     const [rightClickPanning, setIsRightClickPanning] = useState(false);
@@ -416,6 +419,11 @@ export const Canvas = () => {
     const onPointerDown = useCallback((
         e: React.PointerEvent,
     ) => {
+
+        if (activeTouches > 1) {
+            return;
+        }
+
         const point = pointerEventToCanvasPoint(e, camera, zoom);
 
         if (e.button === 0) {
@@ -449,7 +457,7 @@ export const Canvas = () => {
             setStartPanPoint({ x: e.clientX, y: e.clientY });
             document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
         }
-    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom]);
+    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
@@ -645,12 +653,11 @@ export const Canvas = () => {
     }, [canvasState.mode, liveLayers, liveLayersId, setLiveLayers]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
-
         if (
-            canvasState.mode === CanvasMode.Pencil ||
-            canvasState.mode === CanvasMode.Inserting ||
-            canvasState.mode === CanvasMode.Moving ||
-            canvasState.mode === CanvasMode.Eraser ||
+            canvasStateRef.current.mode === CanvasMode.Pencil ||
+            canvasStateRef.current.mode === CanvasMode.Inserting ||
+            canvasStateRef.current.mode === CanvasMode.Moving ||
+            canvasStateRef.current.mode === CanvasMode.Eraser ||
             e.button !== 0
         ) {
             return;
@@ -658,7 +665,7 @@ export const Canvas = () => {
 
         e.stopPropagation();
 
-        const point = pointerEventToCanvasPoint(e, camera, zoom);
+        const point = pointerEventToCanvasPoint(e, cameraRef.current, zoomRef.current);
         setCanvasState({ mode: CanvasMode.Translating, current: point });
 
         if (selectedLayersRef.current.includes(layerId)) {
@@ -667,7 +674,7 @@ export const Canvas = () => {
 
         selectedLayersRef.current = [layerId];
 
-    }, [selectedLayersRef, canvasState]);
+    }, [selectedLayersRef]);
 
     const onTouchDown = useCallback((e: React.TouchEvent) => {
         setActiveTouches(e.touches.length);
@@ -884,6 +891,12 @@ export const Canvas = () => {
             document.body.style.cursor = 'default';
         }
     }, [canvasState.mode, canvasState]);
+
+    useEffect(() => { // for on layer pointer down to update refts
+        canvasStateRef.current = canvasState;
+        zoomRef.current = zoom;
+        cameraRef.current = camera;
+    }, [canvasState, zoom, camera]);
 
     return (
         <main className="fixed h-full w-full bg-neutral-100 touch-none overscroll-none" 
