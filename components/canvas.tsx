@@ -384,7 +384,7 @@ export const Canvas = () => {
         const svgRect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - svgRect.left;
         const y = e.clientY - svgRect.top;
-    
+
         const isMouseWheel = Math.abs(e.deltaY) % 100 === 0 && e.deltaX === 0;
 
         if (isMouseWheel || e.ctrlKey) {
@@ -395,11 +395,11 @@ export const Canvas = () => {
             } else {
                 newZoom = Math.max(zoom / 1.1, 0.3);
             }
-    
+
             const zoomFactor = newZoom / zoom;
             const newX = x - (x - camera.x) * zoomFactor;
             const newY = y - (y - camera.y) * zoomFactor;
-    
+
             setZoom(newZoom);
             localStorage.setItem("zoom", newZoom.toString());
             setCamera({ x: newX, y: newY });
@@ -410,7 +410,7 @@ export const Canvas = () => {
                 x: camera.x - e.deltaX,
                 y: camera.y - e.deltaY,
             };
-    
+
             setCamera(newCameraPosition);
             localStorage.setItem("camera", JSON.stringify(newCameraPosition));
         }
@@ -579,7 +579,7 @@ export const Canvas = () => {
             });
         } else if (canvasState.mode === CanvasMode.Pencil) {
             document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 8 8, auto';
-            insertPath(); 
+            insertPath();
         } else if (canvasState.mode === CanvasMode.Eraser) {
             document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
             return;
@@ -679,7 +679,7 @@ export const Canvas = () => {
     const onTouchDown = useCallback((e: React.TouchEvent) => {
         setActiveTouches(e.touches.length);
     }, []);
-    
+
     const onTouchUp = useCallback((e: React.TouchEvent) => {
         setActiveTouches(e.changedTouches.length);
     }, []);
@@ -687,32 +687,32 @@ export const Canvas = () => {
     const onTouchMove = useCallback((e: React.TouchEvent) => {
         e.preventDefault();
         setActiveTouches(e.touches.length);
-    
+
         if (e.touches.length < 2) {
             setPinchStartDist(null);
             return;
         }
-    
+
         const touch1 = e.touches[0];
         const touch2 = e.touches[1];
-    
+
         const dist = Math.hypot(
             touch1.clientX - touch2.clientX,
             touch1.clientY - touch2.clientY
         );
-    
+
         const svgRect = e.currentTarget.getBoundingClientRect();
         const x = ((touch1.clientX + touch2.clientX) / 2) - svgRect.left;
         const y = ((touch1.clientY + touch2.clientY) / 2) - svgRect.top;
-    
+
         if (pinchStartDist === null) {
             setPinchStartDist(dist);
             setStartPanPoint({ x, y });
             return;
         }
-    
+
         const distChange = Math.abs(dist - pinchStartDist);
-    
+
         if (distChange > 10) { // Zooming
             let newZoom = zoom;
             if (dist > pinchStartDist) {
@@ -720,11 +720,11 @@ export const Canvas = () => {
             } else {
                 newZoom = Math.max(zoom / 1.1, 0.3);
             }
-    
+
             const zoomFactor = newZoom / zoom;
             const newX = x - (x - camera.x) * zoomFactor;
             const newY = y - (y - camera.y) * zoomFactor;
-    
+
             setZoom(newZoom);
             localStorage.setItem("zoom", newZoom.toString());
             setCamera({ x: newX, y: newY });
@@ -732,16 +732,16 @@ export const Canvas = () => {
         } else if (startPanPoint) { // Panning
             const dx = x - startPanPoint.x;
             const dy = y - startPanPoint.y;
-    
+
             const newCameraPosition = {
                 x: camera.x + dx,
                 y: camera.y + dy,
             };
-    
+
             setCamera(newCameraPosition);
             localStorage.setItem("camera", JSON.stringify(newCameraPosition));
         }
-    
+
         setPinchStartDist(dist);
         setStartPanPoint({ x, y });
     }, [zoom, pinchStartDist, camera, startPanPoint]);
@@ -899,15 +899,15 @@ export const Canvas = () => {
     }, [canvasState, zoom, camera]);
 
     return (
-        <main className="fixed h-full w-full bg-neutral-100 touch-none overscroll-none" 
-            style={{ backgroundImage: "url(/dot-grid.png)",
-            backgroundSize: 'cover',
-            WebkitOverflowScrolling: 'touch', 
-            WebkitUserSelect: 'none',
-        }}>
+        <main className="fixed h-full w-full bg-neutral-100 touch-none overscroll-none"
+            style={{
+                backgroundImage: "url(/dot-grid.png)",
+                backgroundSize: 'cover',
+                WebkitOverflowScrolling: 'touch',
+                WebkitUserSelect: 'none',
+            }}>
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
             <Info
-                selectedLayers={selectedLayersRef.current}
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
             />
@@ -931,72 +931,74 @@ export const Canvas = () => {
                     camera={camera}
                 />
             )}
-            <svg
-                id="canvas"
-                className="h-[100vh] w-[100vw]"
-                onWheel={onWheel}
-                onTouchStart={onTouchDown}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchUp}
-                onPointerMove={onPointerMove}
-                onPointerDown={onPointerDown}
-                onPointerUp={onPointerUp}
-            >
-                <g
-                    style={{
-                        transform: `translate(${camera.x}px, ${camera.y}px) scale(${zoom})`,
-                        transformOrigin: 'top left',
-                    }}
+            <div id="canvas"
+                className="h-[100vh] w-[100vw]">
+                <svg
+                    className="h-[100vh] w-[100vw]"
+                    onWheel={onWheel}
+                    onTouchStart={onTouchDown}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchUp}
+                    onPointerMove={onPointerMove}
+                    onPointerDown={onPointerDown}
+                    onPointerUp={onPointerUp}
                 >
-                    {liveLayersId.map((layerId: any) => (
-                        <LayerPreview
-                            onPathErase={onPathErase}
-                            setLiveLayers={setLiveLayers}
-                            liveLayers={liveLayers}
-                            key={layerId}
-                            id={layerId}
-                            onLayerPointerDown={onLayerPointerDown}
-                            onRefChange={setTextRef}
-                        />
-                    ))}
-                    {currentPreviewLayer && (
-                        <CurrentPreviewLayer
-                            layer={currentPreviewLayer}
-                        />
-                    )}
-                    {(canvasState.mode === CanvasMode.SelectionNet || canvasState.mode === CanvasMode.None) && (
-                        <SelectionBox
-                            zoom={zoom}
-                            liveLayers={liveLayers}
-                            selectedLayers={selectedLayersRef.current}
-                            onResizeHandlePointerDown={onResizeHandlePointerDown}
-                            onArrowResizeHandlePointerDown={onArrowResizeHandlePointerDown}
-                        />
-                    )}
-                    {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && activeTouches < 2 && (
-                        <rect
-                            style={{
-                                fill: 'rgba(59, 130, 246, 0.3)',
-                                stroke: '#3B82F6',
-                                strokeWidth: 0.5
-                            }}
-                            x={Math.min(canvasState.origin.x, canvasState.current.x)}
-                            y={Math.min(canvasState.origin.y, canvasState.current.y)}
-                            width={Math.abs(canvasState.origin.x - canvasState.current.x)}
-                            height={Math.abs(canvasState.origin.y - canvasState.current.y)}
-                        />
-                    )}
-                    {pencilDraft != null && pencilDraft.length > 0 && (
-                        <Path
-                            points={pencilDraft}
-                            fill={colorToCss(pathColor)}
-                            x={0}
-                            y={0}
-                            strokeSize={pathStrokeSize}
-                        />
-                    )}
-                </g>
-            </svg>
+                    <g
+                        style={{
+                            transform: `translate(${camera.x}px, ${camera.y}px) scale(${zoom})`,
+                            transformOrigin: 'top left',
+                        }}
+                    >
+                        {liveLayersId.map((layerId: any) => (
+                            <LayerPreview
+                                onPathErase={onPathErase}
+                                setLiveLayers={setLiveLayers}
+                                liveLayers={liveLayers}
+                                key={layerId}
+                                id={layerId}
+                                onLayerPointerDown={onLayerPointerDown}
+                                onRefChange={setTextRef}
+                            />
+                        ))}
+                        {currentPreviewLayer && (
+                            <CurrentPreviewLayer
+                                layer={currentPreviewLayer}
+                            />
+                        )}
+                        {(canvasState.mode === CanvasMode.SelectionNet || canvasState.mode === CanvasMode.None) && (
+                            <SelectionBox
+                                zoom={zoom}
+                                liveLayers={liveLayers}
+                                selectedLayers={selectedLayersRef.current}
+                                onResizeHandlePointerDown={onResizeHandlePointerDown}
+                                onArrowResizeHandlePointerDown={onArrowResizeHandlePointerDown}
+                            />
+                        )}
+                        {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && activeTouches < 2 && (
+                            <rect
+                                style={{
+                                    fill: 'rgba(59, 130, 246, 0.3)',
+                                    stroke: '#3B82F6',
+                                    strokeWidth: 0.5
+                                }}
+                                x={Math.min(canvasState.origin.x, canvasState.current.x)}
+                                y={Math.min(canvasState.origin.y, canvasState.current.y)}
+                                width={Math.abs(canvasState.origin.x - canvasState.current.x)}
+                                height={Math.abs(canvasState.origin.y - canvasState.current.y)}
+                            />
+                        )}
+                        {pencilDraft != null && pencilDraft.length > 0 && pencilDraft[0].length > 0 && !pencilDraft.some(array => array.some(isNaN)) && (
+                            <Path
+                                points={pencilDraft}
+                                fill={colorToCss(pathColor)}
+                                x={0}
+                                y={0}
+                                strokeSize={pathStrokeSize}
+                            />
+                        )}
+                    </g>
+                </svg>
+            </div>
         </main>
     );
 };

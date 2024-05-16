@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Hint } from "@/components/hint";
 import { Menu, Zap } from "lucide-react";
 import { Actions } from "./actions";
-import { Layers } from "@/types/canvas";
+import { Layers, Point } from "@/types/canvas";
 import { useState } from "react";
 import { NeedMore } from "./need-more";
 
@@ -21,13 +21,11 @@ const TabSeparator = () => {
 interface InfoProps {
     setLiveLayers: (layers: Layers) => void;
     setLiveLayersId: (layersId: string[]) => void;
-    selectedLayers: string[];
 }
 
 export const Info = ({
     setLiveLayersId,
     setLiveLayers,
-    selectedLayers
 }: InfoProps) => {
     const [isDialogOpen, setDialogOpen] = useState(false);
     return(
@@ -49,7 +47,6 @@ export const Info = ({
             </Hint>
             <TabSeparator />
             <Actions 
-                selectedLayers={selectedLayers}
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
                 side="bottom" sideOffset={10}>

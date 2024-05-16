@@ -10,8 +10,9 @@ import {
     DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { exportToPdf } from "@/lib/utils";
+import { exportToPNG } from "@/lib/utils";
 import { ConfirmModal } from "./confirm-delete-board";
+import { Point } from "@/types/canvas";
 
 interface ActionsProps {
     children: React.ReactNode;
@@ -19,7 +20,6 @@ interface ActionsProps {
     sideOffset?: DropdownMenuContentProps["sideOffset"];
     setLiveLayers: (layers: any) => void;
     setLiveLayersId: (layersId: string[]) => void;
-    selectedLayers: string[];
 };
 
 export const Actions = ({
@@ -28,8 +28,14 @@ export const Actions = ({
     sideOffset,
     setLiveLayers,
     setLiveLayersId,
-    selectedLayers
 }: ActionsProps) => {
+
+    let liveLayers = localStorage.getItem("layers");
+
+    if (liveLayers) {
+        liveLayers = JSON.parse(liveLayers);
+    }
+
     const onDelete = () => {
         setLiveLayers([]);
         setLiveLayersId([]);
@@ -51,7 +57,7 @@ export const Actions = ({
             >
                 <ConfirmModal
                     header="Crear nueva pizarra?"
-                    description="This will delete the board and all of its contents."
+                    description="Esto borrará todo el contenido de la pizarra."
                     onConfirm={onDelete}
                 >
                     <Button
@@ -65,10 +71,10 @@ export const Actions = ({
                 <Button
                     variant="ghost"
                     className="p-3 cursor-pointer text-sm w-full justify-start font-semibold"
-                    onClick={() => exportToPdf(selectedLayers)}
+                    onClick={() => exportToPNG()}
                 >
                     <ArrowUpFromLine className="h-4 w-4 mr-2" />
-                    Export to PDF
+                    Export to PNG
                 </Button>
             </DropdownMenuContent>
         </DropdownMenu>

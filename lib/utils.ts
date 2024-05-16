@@ -1,19 +1,18 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import html2canvas from 'html2canvas';
 
-import { 
+import {
   ArrowHandle,
-  Camera, 
-  Color, 
-  Layer, 
-  LayerType, 
-  PathLayer, 
-  Point, 
-  Side, 
+  Camera,
+  Color,
+  Layer,
+  LayerType,
+  PathLayer,
+  Point,
+  Side,
   XYWH
 } from "@/types/canvas";
-import { toast } from "sonner";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -36,8 +35,8 @@ export function colorToCss(color: Color) {
 
 export function resizeBounds(
   type: any,
-  bounds: XYWH, 
-  corner: Side, 
+  bounds: XYWH,
+  corner: Side,
   point: Point,
   textareaRef?: React.RefObject<HTMLTextAreaElement>,
   layer?: Layer
@@ -101,8 +100,8 @@ export function resizeBounds(
     }
   }
 
-  if (layer && layer?.height/layer?.width === result.height/result.width && textareaRef && textareaRef.current && layer.type === LayerType.Text) {
-    const newFontSize = Math.min(result.width/layer.width, result.height/layer.height ) * layer.textFontSize
+  if (layer && layer?.height / layer?.width === result.height / result.width && textareaRef && textareaRef.current && layer.type === LayerType.Text) {
+    const newFontSize = Math.min(result.width / layer.width, result.height / layer.height) * layer.textFontSize
     result.textFontSize = newFontSize
     return result
   }
@@ -110,13 +109,13 @@ export function resizeBounds(
   if (!isCorner && textareaRef && textareaRef.current) {
     result.height = textareaRef.current.scrollHeight;
     return result
-  } 
+  }
 
   return result;
 };
 
 export function resizeArrowBounds(
-  bounds: any, 
+  bounds: any,
   point: Point,
   handle: ArrowHandle,
 ): any {
@@ -184,7 +183,7 @@ export function findIntersectingLayersWithRectangle(
 
       if (
         rect.x + rect.width > Math.min(x, end.x) &&
-        rect.x < Math.max(x, end.x) && 
+        rect.x < Math.max(x, end.x) &&
         rect.y + rect.height > Math.min(y, end.y) &&
         rect.y < Math.max(y, end.y)
       ) {
@@ -195,7 +194,7 @@ export function findIntersectingLayersWithRectangle(
 
       if (
         rect.x + rect.width > x &&
-        rect.x < x + width && 
+        rect.x < x + width &&
         rect.y + rect.height > y &&
         rect.y < y + height
       ) {
@@ -281,20 +280,14 @@ export function getSvgPathFromStroke(stroke: number[][]) {
 
 export const NAME = "Sketchlie";
 
-export const exportToPdf = async (selectedLayers: string[]) => {
-  toast.info("Coming soon!", {
-    position: "top-center",
-    closeButton: true
-  });
-  // const liveLayers: Layers = JSON.parse(localStorage.getItem("layers") || '{}');
-  // let layersList: Layer[] = [];
-
-  // if (!selectedLayers.length || !liveLayers) {
-  //   toast.info("Selecciona los objetos para exportar", {
-  //     position: "top-center",
-  //     closeButton: true
-  //   });
-  //   return;
-  // }
-
+export const exportToPNG = async () => {
+  const screenShot = document.getElementById("canvas") as HTMLElement;
+  html2canvas(screenShot).then((canvas: any) => {
+    const base64image = canvas.toDataURL("image/png");
+    var anchor = document.createElement("a");
+    anchor.setAttribute("href", base64image);
+    anchor.setAttribute("download", "test.png");
+    anchor.click();
+    anchor.remove();
+  })
 }
