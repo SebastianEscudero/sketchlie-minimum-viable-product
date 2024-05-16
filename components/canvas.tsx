@@ -931,9 +931,8 @@ export const Canvas = () => {
                     camera={camera}
                 />
             )}
-            <div id="canvas"
-                className="h-[100vh] w-[100vw]">
                 <svg
+                    id="canvas"
                     className="h-[100vh] w-[100vw]"
                     onWheel={onWheel}
                     onTouchStart={onTouchDown}
@@ -998,7 +997,6 @@ export const Canvas = () => {
                         )}
                     </g>
                 </svg>
-            </div>
         </main>
     );
 };
