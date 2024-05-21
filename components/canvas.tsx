@@ -61,6 +61,7 @@ class InsertLayerCommand implements Command {
 
       // Call the addLayer API mutation to add the layers in the database
       localStorage.setItem("layers", JSON.stringify(newLayers));
+      localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
     }
 
     undo() {
@@ -78,6 +79,7 @@ class InsertLayerCommand implements Command {
 
       // Call the deleteLayer API mutation to delete the layers in the database
       localStorage.setItem("layers", JSON.stringify(remainingLayers));
+        localStorage.setItem("layerIds", JSON.stringify(remainingLayerIds));
     }
 }
 
