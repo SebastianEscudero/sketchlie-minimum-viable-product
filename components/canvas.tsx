@@ -35,7 +35,134 @@ import { SketchlieBlock } from "./sketchlie-block";
 import { BottomCanvasLinks } from "./bottom-canvas-links";
 import { CurrentPreviewLayer } from "./current-preview-layer";
 
+interface Command {
+    execute(): void;
+    undo(): void;
+}
+
+class InsertLayerCommand implements Command {
+    constructor(private layerIds: any[],
+        private layers: any[],
+        private prevLayers: Layers,
+        private prevLayerIds: string[], 
+        private setLiveLayers: (layers: Layers) => void,
+        private setLiveLayerIds: (layerIds: string[]) => void) {}
+    execute() {
+      let newLayers = { ...this.prevLayers };
+      let newLayerIds = [...this.prevLayerIds];
+
+      this.layerIds.forEach((layerId, index) => {
+        newLayers = { ...newLayers, [layerId]: this.layers[index] };
+        newLayerIds = [...newLayerIds, layerId];
+      });
+
+      this.setLiveLayers(newLayers);
+      this.setLiveLayerIds(newLayerIds);
+
+      // Call the addLayer API mutation to add the layers in the database
+      localStorage.setItem("layers", JSON.stringify(newLayers));
+    }
+
+    undo() {
+      let remainingLayers = { ...this.prevLayers };
+      let remainingLayerIds = [...this.prevLayerIds];
+
+      this.layerIds.forEach((layerId) => {
+        const { [layerId]: _, ...remaining } = remainingLayers;
+        remainingLayers = remaining;
+        remainingLayerIds = remainingLayerIds.filter(id => id !== layerId);
+      });
+
+      this.setLiveLayers(remainingLayers);
+      this.setLiveLayerIds(remainingLayerIds);
+
+      // Call the deleteLayer API mutation to delete the layers in the database
+      localStorage.setItem("layers", JSON.stringify(remainingLayers));
+    }
+}
+
+class DeleteLayerCommand implements Command {
+    constructor(private layerIds: string[],
+        private layers: any,
+        private prevLayers: Layers,
+        private prevLayerIds: string[], 
+        private setLiveLayers: (layers: Layers) => void,
+        private setLiveLayerIds: (layerIds: string[]) => void) {}
+
+        execute() {
+            const remainingLayers = { ...this.prevLayers };
+            const remainingLayerIds = [...this.prevLayerIds];
+
+            this.layerIds.forEach(id => {
+                delete remainingLayers[id];
+                const index = remainingLayerIds.indexOf(id);
+                if (index > -1) {
+                    remainingLayerIds.splice(index, 1);
+                }
+            });
+
+            // Call the deleteLayer API mutation to delete all the layers in the database
+            this.setLiveLayers(remainingLayers);
+            this.setLiveLayerIds(remainingLayerIds);
+
+            localStorage.setItem("layers", JSON.stringify(remainingLayers));
+            localStorage.setItem("layerIds", JSON.stringify(remainingLayerIds));
+        }
+
+        undo() {
+            const newLayers = { ...this.prevLayers };
+            const newLayerIds = [...this.prevLayerIds];
+
+            const layersToAdd = this.layerIds.map(id => {
+                newLayers[id] = this.layers[id];
+                if (!newLayerIds.includes(id)) {
+                    newLayerIds.push(id);
+                }
+                return this.layers[id];
+            });
+
+            // Call the addLayer API mutation to add all the layers back in the database
+            this.setLiveLayers(newLayers);
+            this.setLiveLayerIds(newLayerIds);
+
+            localStorage.setItem("layers", JSON.stringify(layersToAdd));
+            localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
+        }
+}
+
+class TranslateLayersCommand implements Command {
+    constructor(
+        private layerIds: string[],
+        private initialLayers: any,
+        private finalLayers: any,
+        private setLiveLayers: (layers: any) => void,) {}
+
+    execute() {
+        this.setLiveLayers({ ...this.finalLayers });
+
+        // Prepare layer updates
+        const layerUpdates = this.layerIds.map(layerId => this.finalLayers[layerId]);
+
+        // Call the updateLayer API mutation to update the layers in the database
+        localStorage.setItem("layers", JSON.stringify(this.finalLayers));
+    }
+
+    undo() {
+        this.setLiveLayers({ ...this.initialLayers });
+
+        // Prepare layer updates
+        const layerUpdates = this.layerIds.map(layerId => this.initialLayers[layerId]);
+
+        // Call the updateLayer API mutation to revert the layers in the database
+        localStorage.setItem("layers", JSON.stringify(this.initialLayers));
+    }
+}
+
+
 export const Canvas = () => {
+    const [initialLayers, setInitialLayers] = useState<Layers>({}); // used for undo/redo
+    const [history, setHistory] = useState<Command[]>([]);
+    const [redoStack, setRedoStack] = useState<Command[]>([]);
     const mousePositionRef = useRef({ x: 0, y: 0 });
     const [liveLayers, setLiveLayers] = useState<Layers>({});
     const [liveLayersId, setLiveLayersId] = useState<string[]>([]);
@@ -74,6 +201,26 @@ export const Canvas = () => {
 
     useDisableScrollBounce();
 
+    const performAction = (command: Command) => {
+        command.execute();
+        setHistory([...history, command]);
+        setRedoStack([]); // clear redo stack when new action is performed
+    };
+
+    const undo = () => {
+        const lastCommand = history[history.length - 1];
+        lastCommand.undo();
+        setHistory(history.slice(0, -1));
+        setRedoStack([...redoStack, lastCommand]);
+    };
+
+    const redo = () => {
+        const lastCommand = redoStack[redoStack.length - 1];
+        lastCommand.execute();
+        setRedoStack(redoStack.slice(0, -1));
+        setHistory([...history, lastCommand]);
+    };
+
     const insertLayer = useCallback((layerType: LayerType, position: Point, width: number, height: number, center?: Point) => {
         const layerId = nanoid();
 
@@ -97,6 +244,7 @@ export const Canvas = () => {
                 width: width,
                 fill: fillColor,
                 textFontSize: 12,
+                outlineFill: null
             };
         } else if (layerType === LayerType.Note) {
             layer = {
@@ -139,6 +287,8 @@ export const Canvas = () => {
         setLiveLayersId(newLayerIds);
         setLiveLayers(newLayers as Layers);
 
+        const command = new InsertLayerCommand([layerId], [layer], liveLayers, liveLayersId, setLiveLayers, setLiveLayersId);
+        performAction(command);
 
         if (layer.type !== LayerType.Text) {
             selectedLayersRef.current = [layerId];
@@ -147,38 +297,6 @@ export const Canvas = () => {
         localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
         localStorage.setItem("layers", JSON.stringify(newLayers));
 
-        setCanvasState({ mode: CanvasMode.None });
-    }, [liveLayers, liveLayersId]);
-
-    const insertImage = useCallback((
-        layerType: LayerType.Image,
-        position: Point,
-        selectedImage: string,
-    ) => {
-        const layerId = nanoid();
-
-
-        if (selectedImage === "") {
-            return;
-        }
-
-        const layer = {
-            type: layerType,
-            x: position.x,
-            y: position.y,
-            height: 80,
-            width: 80,
-            src: selectedImage,
-            fill: null,
-            value: "",
-        };
-
-        const newLayers = { ...liveLayers, [layerId]: layer };
-        const newLayerIds = [...liveLayersId, layerId];
-        setLiveLayersId(newLayerIds);
-        setLiveLayers(newLayers as Layers);
-        localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
-        localStorage.setItem("layers", JSON.stringify(newLayers));
         setCanvasState({ mode: CanvasMode.None });
     }, [liveLayers, liveLayersId]);
 
@@ -202,10 +320,10 @@ export const Canvas = () => {
                 newLayer.x += offset.x;
                 newLayer.y += offset.y;
                 if (newLayer.type === LayerType.Arrow && newLayer.center) {
-                    const newCenter = { 
-                        x: newLayer.center.x + offset.x, 
-                        y: newLayer.center.y + offset.y 
-                      };
+                    const newCenter = {
+                        x: newLayer.center.x + offset.x,
+                        y: newLayer.center.y + offset.y
+                    };
                     newLayer.center = newCenter;
                 }
                 newLayers[id] = newLayer;
@@ -586,9 +704,6 @@ export const Canvas = () => {
         } else if (canvasState.mode === CanvasMode.Eraser) {
             document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
             return;
-        } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Image) {
-            setSelectedImage("");
-            insertImage(LayerType.Image, point, selectedImage);
         } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
             const layerType = canvasState.layerType;
             setIsPanning(false);
@@ -620,6 +735,43 @@ export const Canvas = () => {
         } else if (canvasState.mode === CanvasMode.Moving) {
             document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
             setIsPanning(false);
+        } else if (canvasState.mode === CanvasMode.Translating) {
+            let layerIds: any = [];
+            let layerUpdates: any = [];        
+            selectedLayersRef.current.forEach(id => {
+                const newLayer = liveLayers[id];
+                if (newLayer) {
+                    layerIds.push(id);
+                    layerUpdates.push(newLayer);
+                }
+            });
+        
+            if (layerIds.length > 0) {
+                const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
+                performAction(command);
+            }
+            setCanvasState({
+                mode: CanvasMode.None,
+            });
+        } else if (canvasState.mode === CanvasMode.Resizing || canvasState.mode === CanvasMode.ArrowResizeHandler) {
+            let layerIds: any = [];
+            let layerUpdates: any = [];
+
+            selectedLayersRef.current.forEach(id => {
+                const newLayer = liveLayers[id];
+                if (newLayer) {
+                    layerIds.push(id);
+                    layerUpdates.push(newLayer);
+                }
+            });
+
+            if (layerIds.length > 0) {
+                const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
+                performAction(command);
+            }
+            setCanvasState({
+                mode: CanvasMode.None,
+            });
         } else {
             document.body.style.cursor = 'default';
             setCanvasState({
@@ -639,9 +791,9 @@ export const Canvas = () => {
             insertPath,
             setIsPanning,
             zoom,
-            selectedImage,
-            setSelectedImage,
-            insertImage,
+            initialLayers,
+            liveLayers,
+            selectedLayersRef,
         ]);
 
     const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
@@ -798,11 +950,27 @@ export const Canvas = () => {
             }
             newLiveLayers[newId] = clonedLayer;
         });
+        
+        const command = new InsertLayerCommand(newLiveLayerIds, newLiveLayerIds, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId);
+        performAction(command);
+
         setLiveLayers(newLiveLayers);
         setLiveLayersId(newLiveLayerIds);
         localStorage.setItem("layers", JSON.stringify(newLiveLayers));
         localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
     }, [copiedLayers]);
+
+    useEffect(() => { // this is for the undo redo
+        const onPointerDown = (e: PointerEvent) => {
+            setInitialLayers({ ...liveLayers });
+        }
+
+        document.addEventListener('pointerdown', onPointerDown);
+
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown);
+        }
+    }, [liveLayers])
 
     useEffect(() => {
         const onMouseMove = (e: any) => {
@@ -815,6 +983,19 @@ export const Canvas = () => {
 
         function onKeyDown(e: KeyboardEvent) {
             switch (e.key.toLocaleLowerCase()) {
+                case "z": {
+                    if (e.ctrlKey || e.metaKey) {
+                        if (e.shiftKey && redoStack.length > 0) {
+                            redo();
+                            return;
+                        } else if (!e.shiftKey && history.length > 0) {
+                            undo();
+                            return;
+                        }
+                        e.preventDefault();
+                    }
+                    break;
+                }
                 case "c": {
                     if (e.ctrlKey || e.metaKey) {
                         copySelectedLayers();
@@ -843,9 +1024,14 @@ export const Canvas = () => {
                     }
                     if (selectedLayersRef.current.length > 0) {
                         const newLayers = { ...liveLayers };
+                        const deletedLayers: { [key: string]: any } = {};
                         selectedLayersRef.current.forEach(id => {
+                            deletedLayers[id] = newLayers[id];
                             delete newLayers[id];
                         });
+
+                        const command = new DeleteLayerCommand(selectedLayersRef.current, deletedLayers, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId);
+                        performAction(command);
                         setLiveLayers(newLayers);
                         setLiveLayersId(liveLayersId.filter(id => !selectedLayersRef.current.includes(id)));
                         localStorage.setItem("layerIds", JSON.stringify(liveLayersId));
@@ -862,6 +1048,7 @@ export const Canvas = () => {
             document.removeEventListener('mousemove', onMouseMove);
         }
     }, [copySelectedLayers, pasteCopiedLayers, camera, zoom, liveLayers, selectedLayersRef, copiedLayers, liveLayersId]);
+
 
     useEffect(() => {
         if (typeof document !== 'undefined') {
@@ -901,6 +1088,8 @@ export const Canvas = () => {
         cameraRef.current = camera;
     }, [canvasState, zoom, camera]);
 
+    console.log(liveLayersId)
+
     return (
         <main className="fixed h-full w-full bg-neutral-100 touch-none overscroll-none"
             style={{
@@ -922,6 +1111,10 @@ export const Canvas = () => {
                 setPathStrokeSize={setPathStrokeSize}
                 canvasState={canvasState}
                 setCanvasState={setCanvasState}
+                undo={undo}
+                redo={redo}
+                canUndo={history.length > 0}
+                canRedo={redoStack.length > 0}
             />
             {canvasState.mode === CanvasMode.None && (
                 <SelectionTools
@@ -932,74 +1125,76 @@ export const Canvas = () => {
                     selectedLayers={selectedLayersRef.current}
                     zoom={zoom}
                     camera={camera}
+                    DeleteLayerCommand={DeleteLayerCommand}
+                    performAction={performAction}
                 />
             )}
-                <svg
-                    id="canvas"
-                    className="h-[100vh] w-[100vw]"
-                    onWheel={onWheel}
-                    onTouchStart={onTouchDown}
-                    onTouchMove={onTouchMove}
-                    onTouchEnd={onTouchUp}
-                    onPointerMove={onPointerMove}
-                    onPointerDown={onPointerDown}
-                    onPointerUp={onPointerUp}
+            <svg
+                id="canvas"
+                className="h-[100vh] w-[100vw]"
+                onWheel={onWheel}
+                onTouchStart={onTouchDown}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchUp}
+                onPointerMove={onPointerMove}
+                onPointerDown={onPointerDown}
+                onPointerUp={onPointerUp}
+            >
+                <g
+                    style={{
+                        transform: `translate(${camera.x}px, ${camera.y}px) scale(${zoom})`,
+                        transformOrigin: 'top left',
+                    }}
                 >
-                    <g
-                        style={{
-                            transform: `translate(${camera.x}px, ${camera.y}px) scale(${zoom})`,
-                            transformOrigin: 'top left',
-                        }}
-                    >
-                        {liveLayersId.map((layerId: any) => (
-                            <LayerPreview
-                                onPathErase={onPathErase}
-                                setLiveLayers={setLiveLayers}
-                                liveLayers={liveLayers}
-                                key={layerId}
-                                id={layerId}
-                                onLayerPointerDown={onLayerPointerDown}
-                                onRefChange={setTextRef}
-                            />
-                        ))}
-                        {currentPreviewLayer && (
-                            <CurrentPreviewLayer
-                                layer={currentPreviewLayer}
-                            />
-                        )}
-                        {(canvasState.mode === CanvasMode.SelectionNet || canvasState.mode === CanvasMode.None || CanvasMode.Resizing) && (
-                            <SelectionBox
-                                zoom={zoom}
-                                liveLayers={liveLayers}
-                                selectedLayers={selectedLayersRef.current}
-                                onResizeHandlePointerDown={onResizeHandlePointerDown}
-                                onArrowResizeHandlePointerDown={onArrowResizeHandlePointerDown}
-                            />
-                        )}
-                        {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && activeTouches < 2 && (
-                            <rect
-                                style={{
-                                    fill: 'rgba(59, 130, 246, 0.3)',
-                                    stroke: '#3B82F6',
-                                    strokeWidth: 0.5
-                                }}
-                                x={Math.min(canvasState.origin.x, canvasState.current.x)}
-                                y={Math.min(canvasState.origin.y, canvasState.current.y)}
-                                width={Math.abs(canvasState.origin.x - canvasState.current.x)}
-                                height={Math.abs(canvasState.origin.y - canvasState.current.y)}
-                            />
-                        )}
-                        {pencilDraft != null && pencilDraft.length > 0 && pencilDraft[0].length > 0 && !pencilDraft.some(array => array.some(isNaN)) && (
-                            <Path
-                                points={pencilDraft}
-                                fill={colorToCss(pathColor)}
-                                x={0}
-                                y={0}
-                                strokeSize={pathStrokeSize}
-                            />
-                        )}
-                    </g>
-                </svg>
+                    {liveLayersId.map((layerId: any) => (
+                        <LayerPreview
+                            onPathErase={onPathErase}
+                            setLiveLayers={setLiveLayers}
+                            liveLayers={liveLayers}
+                            key={layerId}
+                            id={layerId}
+                            onLayerPointerDown={onLayerPointerDown}
+                            onRefChange={setTextRef}
+                        />
+                    ))}
+                    {currentPreviewLayer && (
+                        <CurrentPreviewLayer
+                            layer={currentPreviewLayer}
+                        />
+                    )}
+                    {(canvasState.mode === CanvasMode.SelectionNet || canvasState.mode === CanvasMode.None || CanvasMode.Resizing) && (
+                        <SelectionBox
+                            zoom={zoom}
+                            liveLayers={liveLayers}
+                            selectedLayers={selectedLayersRef.current}
+                            onResizeHandlePointerDown={onResizeHandlePointerDown}
+                            onArrowResizeHandlePointerDown={onArrowResizeHandlePointerDown}
+                        />
+                    )}
+                    {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && activeTouches < 2 && (
+                        <rect
+                            style={{
+                                fill: 'rgba(59, 130, 246, 0.3)',
+                                stroke: '#3B82F6',
+                                strokeWidth: 0.5
+                            }}
+                            x={Math.min(canvasState.origin.x, canvasState.current.x)}
+                            y={Math.min(canvasState.origin.y, canvasState.current.y)}
+                            width={Math.abs(canvasState.origin.x - canvasState.current.x)}
+                            height={Math.abs(canvasState.origin.y - canvasState.current.y)}
+                        />
+                    )}
+                    {pencilDraft != null && pencilDraft.length > 0 && pencilDraft[0].length > 0 && !pencilDraft.some(array => array.some(isNaN)) && (
+                        <Path
+                            points={pencilDraft}
+                            fill={colorToCss(pathColor)}
+                            x={0}
+                            y={0}
+                            strokeSize={pathStrokeSize}
+                        />
+                    )}
+                </g>
+            </svg>
         </main>
     );
 };

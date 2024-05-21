@@ -21,6 +21,8 @@ interface SelectionToolsProps {
   liveLayerIds: string[];
   setLiveLayers: (layers: any) => void;
   setLiveLayerIds: (ids: string[]) => void;
+  DeleteLayerCommand: any;
+  performAction: any;
 };
 
 export const SelectionTools = memo(({
@@ -31,6 +33,8 @@ export const SelectionTools = memo(({
   setLiveLayerIds,
   liveLayers,
   liveLayerIds,
+  DeleteLayerCommand,
+  performAction,
 }: SelectionToolsProps) => {
 
   const isTextOrNoteLayer = selectedLayers.every(layer => 
@@ -160,15 +164,18 @@ export const SelectionTools = memo(({
   }, [selectedLayers, setLiveLayers]);
 
   const deleteLayers = useCallback(() => {  
-    selectedLayers.forEach((id) => {
-      delete liveLayers[id];
+    const layersToDelete: { [key: string]: any } = {};
+    selectedLayers.forEach(id => {
+        layersToDelete[id] = liveLayers[id];
     });
-  
 
+    const command = new DeleteLayerCommand(selectedLayers, layersToDelete, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds);
+    performAction(command);
+  
     setLiveLayers({ ...liveLayers });
     setLiveLayerIds([...liveLayerIds.filter((id) => !selectedLayers.includes(id))]);
     localStorage.setItem('layers', JSON.stringify(liveLayers));
-  }, [selectedLayers, liveLayers, setLiveLayers, liveLayerIds, setLiveLayerIds]);
+  }, [selectedLayers, liveLayers, setLiveLayers, liveLayerIds, setLiveLayerIds, performAction, DeleteLayerCommand]);
 
   if (!selectionBounds) {
     return null;
