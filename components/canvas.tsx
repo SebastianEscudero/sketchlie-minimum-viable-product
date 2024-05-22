@@ -816,16 +816,19 @@ export const Canvas = () => {
             selectedLayersRef,
         ]);
 
-    const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
-        if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
-            const newLiveLayers = { ...liveLayers };
-            delete newLiveLayers[layerId];
-            localStorage.setItem("layers", JSON.stringify(newLiveLayers));
-            localStorage.setItem("layerIds", JSON.stringify(liveLayersId.filter(id => id !== layerId)));
-            setLiveLayers(newLiveLayers);
-            setLiveLayersId(liveLayersId.filter(id => id !== layerId));
-        }
-    }, [canvasState.mode, liveLayers, liveLayersId, setLiveLayers]);
+        const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
+            if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
+                const command = new DeleteLayerCommand(
+                    [layerId],
+                    liveLayers,
+                    { ...liveLayers },
+                    [...liveLayersId],
+                    setLiveLayers,
+                    setLiveLayersId
+                );
+                performAction(command);
+            }
+        }, [canvasState.mode, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
         if (
@@ -1174,6 +1177,7 @@ export const Canvas = () => {
                             id={layerId}
                             onLayerPointerDown={onLayerPointerDown}
                             onRefChange={setTextRef}
+                            zoomRef={zoomRef}
                         />
                     ))}
                     {currentPreviewLayer && (
