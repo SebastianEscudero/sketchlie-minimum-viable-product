@@ -1090,8 +1090,6 @@ export const Canvas = () => {
         cameraRef.current = camera;
     }, [canvasState, zoom, camera]);
 
-    console.log(liveLayersId)
-
     return (
         <main className="fixed h-full w-full bg-neutral-100 touch-none overscroll-none"
             style={{
@@ -1171,6 +1169,8 @@ export const Canvas = () => {
                             selectedLayers={selectedLayersRef.current}
                             onResizeHandlePointerDown={onResizeHandlePointerDown}
                             onArrowResizeHandlePointerDown={onArrowResizeHandlePointerDown}
+                            setCanvasState={setCanvasState}
+                            camera={camera}
                         />
                     )}
                     {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && activeTouches < 2 && (

@@ -168,13 +168,19 @@ export const SelectionTools = memo(({
     selectedLayers.forEach(id => {
         layersToDelete[id] = liveLayers[id];
     });
-
+  
     const command = new DeleteLayerCommand(selectedLayers, layersToDelete, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds);
     performAction(command);
   
-    setLiveLayers({ ...liveLayers });
-    setLiveLayerIds([...liveLayerIds.filter((id) => !selectedLayers.includes(id))]);
-    localStorage.setItem('layers', JSON.stringify(liveLayers));
+    const newLiveLayers = { ...liveLayers };
+    const newLiveLayerIds = [...liveLayerIds.filter((id) => !selectedLayers.includes(id))];
+  
+    setLiveLayers(newLiveLayers);
+    setLiveLayerIds(newLiveLayerIds);
+    
+    localStorage.setItem('layers', JSON.stringify(newLiveLayers));
+    localStorage.setItem('layerIds', JSON.stringify(newLiveLayerIds));
+    selectedLayers.length = 0
   }, [selectedLayers, liveLayers, setLiveLayers, liveLayerIds, setLiveLayerIds, performAction, DeleteLayerCommand]);
 
   if (!selectionBounds) {
