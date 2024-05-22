@@ -418,17 +418,20 @@ export const Canvas = () => {
         const id = nanoid();
         liveLayers[id] = penPointsToPathLayer(pencilDraft, pathColor, pathStrokeSize);
 
-        const liveLayerIds = JSON.parse(localStorage.getItem("layerIds") || '[]');
-        liveLayerIds.push(id);
+        const command = new InsertLayerCommand(
+            [id], 
+            [liveLayers[id]], 
+            { ...liveLayers }, 
+            [...liveLayersId], 
+            setLiveLayers, 
+            setLiveLayersId
+        );
 
         setPencilDraft([[]]);
-        setLiveLayers({ ...liveLayers });
-        setLiveLayersId([...liveLayerIds]);
-        localStorage.setItem("layers", JSON.stringify(liveLayers));
-        localStorage.setItem("layerIds", JSON.stringify(liveLayerIds));
+        performAction(command); 
 
         setCanvasState({ mode: CanvasMode.Pencil });
-    }, [pencilDraft, liveLayers]);
+    }, [pencilDraft, liveLayers, liveLayersId]);
 
     const startDrawing = useCallback((point: Point, pressure: number) => {
         const pencilDraft = [[point.x, point.y, pressure]];
@@ -469,11 +472,14 @@ export const Canvas = () => {
         }
 
         if (layer) {
-            if (layer.type === LayerType.Note) {
-                bounds.textFontSize = layer.textFontSize;
+            const newLayer = { ...layer }; // Create a new object instead of modifying the existing one
+            if (newLayer.type === LayerType.Note) {
+                bounds.textFontSize = newLayer.textFontSize;
+            } else if (newLayer.type === LayerType.Arrow) {
+                newLayer.center = bounds.center;
             }
-            Object.assign(layer, bounds);
-            liveLayers[selectedLayersRef.current[0]] = layer;
+            Object.assign(newLayer, bounds);
+            liveLayers[selectedLayersRef.current[0]] = newLayer;
             setLiveLayers({ ...liveLayers });
             localStorage.setItem("layers", JSON.stringify(liveLayers));
         }
@@ -974,17 +980,18 @@ export const Canvas = () => {
         localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
     }, [copiedLayers]);
 
-    useEffect(() => { // this is for the undo redo
+    useEffect(() => {
         const onPointerDown = (e: PointerEvent) => {
-            setInitialLayers({ ...liveLayers });
+            const deepCopy = JSON.parse(JSON.stringify(liveLayers));
+            setInitialLayers(deepCopy);
         }
-
+    
         document.addEventListener('pointerdown', onPointerDown);
-
+    
         return () => {
             document.removeEventListener('pointerdown', onPointerDown);
         }
-    }, [liveLayers])
+    }, [liveLayers]);
 
     useEffect(() => {
         const onMouseMove = (e: any) => {
