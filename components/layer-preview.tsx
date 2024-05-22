@@ -33,8 +33,6 @@ export const LayerPreview = memo(({
   zoomRef,
 }: LayerPreviewProps) => {
   
-  console.log('re render', zoomRef)
-
   const layer = liveLayers[id];
   
   if (!layer) {
