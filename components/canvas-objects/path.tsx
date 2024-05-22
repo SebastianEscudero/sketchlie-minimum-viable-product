@@ -39,12 +39,13 @@ export const Path = ({
             )}
             style={{
                 transform: `translate(${x}px, ${y}px)`,
+                pointerEvents: "stroke"
             }}
             x={0}
             y={0}
             fill={isTransparent ? '#000' : fill}
             stroke={stroke}
-            strokeWidth={1}
+            strokeWidth={50}
         />
     );
 };
