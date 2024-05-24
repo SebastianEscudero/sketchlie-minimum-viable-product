@@ -188,17 +188,20 @@ export const SelectionTools = memo(({
   }
 
   return (
-    <div
-      className="absolute p-1 rounded-sm bg-white shadow-sm border flex select-none gap-x-2 items-center"
-      style={{
-        transform: initialPosition
-        ? `translate(
-        calc(${initialPosition.x}px - 50%),
-        ${initialPosition.y < 130 ? `calc(${initialPosition.y + selectionBounds.height * zoom + 30}px)` : `calc(${initialPosition.y - 30}px - 100%)`}
-      )`
-        : undefined
-      }}
-    >
+<div
+  className="absolute p-1 rounded-sm bg-white shadow-sm border flex select-none gap-x-2 items-center"
+  style={{
+    transform: initialPosition
+      ? `translate(
+          calc(${initialPosition.x < 240 ? 240 : initialPosition.x + 190 > window.innerWidth ? window.innerWidth - 180 : initialPosition.x}px - 50%),
+          ${initialPosition.y < 130 
+            ? `calc(${initialPosition.y + selectionBounds.height * zoom + 30}px)` 
+            : `calc(${initialPosition.y - 30}px - 100%)`
+          }
+        )`
+      : undefined
+  }}
+>
       {isPathLayer && (
         <PathStokeSizeSelection
           selectedLayers={selectedLayers}
