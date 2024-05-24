@@ -27,10 +27,15 @@ export const Text = ({
 }: TextProps) => {
     const { x, y, width, height, fill, value, textFontSize } = layer;
     const textRef = useRef<any>(null);
-    const storedLayers = localStorage.getItem('layers');
-    const layers = useMemo(() => storedLayers ? JSON.parse(storedLayers) : {}, [storedLayers]);
     const fillColor = colorToCss(layer.fill);
     const isTransparent = fillColor === 'rgba(0,0,0,0)';
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if (onRefChange) {
+            onRefChange(textRef);
+            textRef.current.focus();
+        }
+    };
 
     const updateValue = (newValue: string) => {
         const storedLayers = localStorage.getItem('layers');
@@ -81,12 +86,18 @@ export const Text = ({
             style={{
                 outline: selectionColor ? `1px solid ${selectionColor}` : "none",
             }}
-            onPointerDown={onPointerDown ? (e) => onPointerDown(e, id) : undefined}
+            onPointerDown={(e) => {
+                handlePointerDown(e);
+                if (onPointerDown) {
+                    onPointerDown(e, id);
+                }
+            }}
         >
             <textarea
                 ref={textRef}
                 value={value || ""}
                 onChange={e => handleContentChange(e.target.value)}
+                onPointerDown={handlePointerDown}
                 autoComplete="off"
                 autoCapitalize="off"
                 autoCorrect="off"
