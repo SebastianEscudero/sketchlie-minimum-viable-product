@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useState } from "react";
 import { BringToFront, SendToBack, Trash2 } from "lucide-react";
 import { Hint } from "@/components/hint";
-import { Camera, Color, LayerType  } from "@/types/canvas";
+import { Camera, Color, LayerType } from "@/types/canvas";
 import { Button } from "@/components/ui/button";
 import { useSelectionBounds } from "@/hooks/use-selection-bounds";
 import { ColorPicker } from "./color-picker";
@@ -37,7 +37,7 @@ export const SelectionTools = memo(({
   performAction,
 }: SelectionToolsProps) => {
 
-  const isTextOrNoteLayer = selectedLayers.every(layer => 
+  const isTextOrNoteLayer = selectedLayers.every(layer =>
     liveLayers[layer]?.type === LayerType.Text || liveLayers[layer]?.type === LayerType.Note
   );
 
@@ -47,7 +47,7 @@ export const SelectionTools = memo(({
   const isArrowLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Arrow);
   const isPathLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Path);
   const layers = selectedLayers.map(id => liveLayers[id]);
-  const [initialPosition, setInitialPosition] = useState<{x: number, y: number} | null>(null);
+  const [initialPosition, setInitialPosition] = useState<{ x: number, y: number } | null>(null);
   const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
 
 
@@ -65,17 +65,17 @@ export const SelectionTools = memo(({
         x = (selectionBounds.width / 2 + selectionBounds.x) * zoom + camera.x;
         y = (selectionBounds.y) * zoom + camera.y;
       }
-      setInitialPosition({x, y});
+      setInitialPosition({ x, y });
     }
   }, [selectedLayers, camera, zoom]);
 
   const moveToFront = useCallback(() => {
     const indices: number[] = [];
-  
+
     if (!liveLayerIds) {
       return;
     }
-  
+
     let arr = [...liveLayerIds];
 
     for (let i = 0; i < arr.length; i++) {
@@ -83,72 +83,72 @@ export const SelectionTools = memo(({
         indices.push(i);
       }
     }
-  
+
     const move = (arr: any[], fromIndex: number, toIndex: number) => {
       var element = arr[fromIndex];
       arr.splice(fromIndex, 1);
       arr.splice(toIndex, 0, element);
     }
-  
+
     for (let i = 0; i < indices.length; i++) {
       move(arr, indices[i], arr.length - indices.length + i);
     }
-    
+
     setLiveLayerIds(arr);
     localStorage.setItem("layerIds", JSON.stringify(arr));
   }, [selectedLayers, setLiveLayerIds, liveLayerIds]);
-  
+
   const moveToBack = useCallback(() => {
     const indices: number[] = [];
-  
+
     if (!liveLayerIds) {
       return;
     }
-  
+
     let arr = [...liveLayerIds];
-  
+
     for (let i = 0; i < arr.length; i++) {
       if (selectedLayers.includes(arr[i])) {
         indices.push(i);
       }
     }
-  
+
     const move = (arr: any[], fromIndex: number, toIndex: number) => {
       var element = arr[fromIndex];
       arr.splice(fromIndex, 1);
       arr.splice(toIndex, 0, element);
     }
-  
+
     for (let i = 0; i < indices.length; i++) {
       move(arr, indices[i], i);
     }
-    
+
     setLiveLayerIds(arr);
     localStorage.setItem("layerIds", JSON.stringify(arr));
   }, [selectedLayers, setLiveLayerIds, liveLayerIds]);
-  
-  const setFill = useCallback((fill: Color) => {  
+
+  const setFill = useCallback((fill: Color) => {
     setLiveLayers((prevLayers: any) => {
       const newLayers = { ...prevLayers };
-  
+
       selectedLayers.forEach((id) => {
         const layer = newLayers[id];
         if (layer) {
           newLayers[id].fill = fill;
         }
       });
-  
+
       localStorage.setItem("layers", JSON.stringify(newLayers));
       return newLayers;
     });
   }, [selectedLayers, setLiveLayers]);
 
-  const setOutlineFill = useCallback((outlineFill: Color) => {  
+  const setOutlineFill = useCallback((outlineFill: Color) => {
     setLiveLayers((prevLayers: any) => {
       const newLayers = { ...prevLayers };
       const updatedIds: any = [];
       const updatedLayers: any = [];
-  
+
       selectedLayers.forEach((id) => {
         const layer = newLayers[id];
         if (layer) {
@@ -163,21 +163,21 @@ export const SelectionTools = memo(({
     });
   }, [selectedLayers, setLiveLayers]);
 
-  const deleteLayers = useCallback(() => {  
+  const deleteLayers = useCallback(() => {
     const layersToDelete: { [key: string]: any } = {};
     selectedLayers.forEach(id => {
-        layersToDelete[id] = liveLayers[id];
+      layersToDelete[id] = liveLayers[id];
     });
-  
+
     const command = new DeleteLayerCommand(selectedLayers, layersToDelete, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds);
     performAction(command);
-  
+
     const newLiveLayers = { ...liveLayers };
     const newLiveLayerIds = [...liveLayerIds.filter((id) => !selectedLayers.includes(id))];
-  
+
     setLiveLayers(newLiveLayers);
     setLiveLayerIds(newLiveLayerIds);
-    
+
     localStorage.setItem('layers', JSON.stringify(newLiveLayers));
     localStorage.setItem('layerIds', JSON.stringify(newLiveLayerIds));
     selectedLayers.length = 0
@@ -188,20 +188,20 @@ export const SelectionTools = memo(({
   }
 
   return (
-<div
-  className="absolute p-1 rounded-sm bg-white shadow-sm border flex select-none gap-x-2 items-center"
-  style={{
-    transform: initialPosition
-      ? `translate(
+    <div
+      className="absolute p-1 rounded-sm bg-white shadow-sm border flex select-none gap-x-2 items-center"
+      style={{
+        transform: initialPosition
+          ? `translate(
           calc(${initialPosition.x < 240 ? 240 : initialPosition.x + 190 > window.innerWidth ? window.innerWidth - 180 : initialPosition.x}px - 50%),
-          ${initialPosition.y < 130 
-            ? `calc(${initialPosition.y + selectionBounds.height * zoom + 30}px)` 
+          ${initialPosition.y < 130
+            ? `calc(${initialPosition.y + selectionBounds.height * zoom + 30}px)`
             : `calc(${initialPosition.y - 30}px - 100%)`
           }
         )`
-      : undefined
-  }}
->
+          : undefined
+      }}
+    >
       {isPathLayer && (
         <PathStokeSizeSelection
           selectedLayers={selectedLayers}
@@ -210,7 +210,7 @@ export const SelectionTools = memo(({
         />
       )}
       {isArrowLayer && (
-        <ArrowHeadSelection 
+        <ArrowHeadSelection
           selectedLayers={selectedLayers}
           setLiveLayers={setLiveLayers}
           liveLayers={liveLayers}
