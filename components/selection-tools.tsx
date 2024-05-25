@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useState } from "react";
-import { BringToFront, SendToBack, Trash2 } from "lucide-react";
+import { BringToFront, Copy, SendToBack, Trash2 } from "lucide-react";
 import { Hint } from "@/components/hint";
 import { Camera, Color, LayerType } from "@/types/canvas";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { FontSizePicker } from "./font-picker";
 import { OutlineColorPicker } from "./outline-color-picker";
 import { ArrowHeadSelection } from "./arrow-head-selection";
 import { PathStokeSizeSelection } from "./stroke-size-selection";
-
+import { nanoid } from "nanoid";
 
 interface SelectionToolsProps {
   camera: Camera;
@@ -22,6 +22,7 @@ interface SelectionToolsProps {
   setLiveLayers: (layers: any) => void;
   setLiveLayerIds: (ids: string[]) => void;
   DeleteLayerCommand: any;
+  InsertLayerCommand: any;
   performAction: any;
 };
 
@@ -34,6 +35,7 @@ export const SelectionTools = memo(({
   liveLayers,
   liveLayerIds,
   DeleteLayerCommand,
+  InsertLayerCommand,
   performAction,
 }: SelectionToolsProps) => {
 
@@ -163,7 +165,49 @@ export const SelectionTools = memo(({
     });
   }, [selectedLayers, setLiveLayers]);
 
-  const deleteLayers = useCallback(() => {
+  const duplicateLayers = useCallback(() => {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    selectedLayers.forEach((id) => {
+        const layer = liveLayers[id];
+        minX = Math.min(minX, layer.x);
+        minY = Math.min(minY, layer.y);
+        maxX = Math.max(maxX, layer.x + layer.width);
+        maxY = Math.max(maxY, layer.y + layer.height);
+    });
+
+    const offsetX = 10; // Offset to move the duplicated layers
+    const offsetY = 10;
+
+    const newSelection = [];
+    const newLiveLayers = { ...liveLayers };
+    const newLiveLayerIds = [...liveLayerIds];
+    selectedLayers.forEach((id) => {
+        const newId = nanoid();
+        newSelection.push(newId);
+        newLiveLayerIds.push(newId);
+        const clonedLayer = JSON.parse(JSON.stringify(liveLayers[id]));
+        clonedLayer.x = clonedLayer.x + offsetX;
+        clonedLayer.y = clonedLayer.y + offsetY;
+        if (clonedLayer.type === LayerType.Arrow) {
+            clonedLayer.center.x += offsetX;
+            clonedLayer.center.y += offsetY;
+        }
+        newLiveLayers[newId] = clonedLayer;
+    });
+
+    const command = new InsertLayerCommand(newLiveLayerIds, newLiveLayerIds, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds);
+    performAction(command);
+
+    setLiveLayers(newLiveLayers);
+    setLiveLayerIds(newLiveLayerIds);
+    localStorage.setItem("layers", JSON.stringify(newLiveLayers));
+    localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
+}, [selectedLayers, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds, performAction, InsertLayerCommand]);
+
+  const deleteLayers = useCallback(() => {  
     const layersToDelete: { [key: string]: any } = {};
     selectedLayers.forEach(id => {
       layersToDelete[id] = liveLayers[id];
@@ -177,9 +221,9 @@ export const SelectionTools = memo(({
 
     setLiveLayers(newLiveLayers);
     setLiveLayerIds(newLiveLayerIds);
-
-    localStorage.setItem('layers', JSON.stringify(newLiveLayers));
-    localStorage.setItem('layerIds', JSON.stringify(newLiveLayerIds));
+    
+    localStorage.setItem("layers", JSON.stringify(newLiveLayers));
+    localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
     selectedLayers.length = 0
   }, [selectedLayers, liveLayers, setLiveLayers, liveLayerIds, setLiveLayerIds, performAction, DeleteLayerCommand]);
 
@@ -193,7 +237,7 @@ export const SelectionTools = memo(({
       style={{
         transform: initialPosition
           ? `translate(
-          calc(${initialPosition.x < 240 ? 240 : initialPosition.x + 190 > window.innerWidth ? window.innerWidth - 180 : initialPosition.x}px - 50%),
+          calc(${initialPosition.x < 265 ? 265 : initialPosition.x + 205 > window.innerWidth ? window.innerWidth - 205 : initialPosition.x}px - 50%),
           ${initialPosition.y < 130
             ? `calc(${initialPosition.y + selectionBounds.height * zoom + 30}px)`
             : `calc(${initialPosition.y - 30}px - 100%)`
@@ -233,6 +277,15 @@ export const SelectionTools = memo(({
         layers={layers}
         onChange={setFill}
       />
+      <Hint label="Duplicate">
+        <Button
+          onClick={duplicateLayers}
+          variant="board"
+          size="icon"
+        >
+          <Copy />
+        </Button>
+      </Hint>
       <Hint label="Bring to front">
         <Button
           onClick={moveToFront}
