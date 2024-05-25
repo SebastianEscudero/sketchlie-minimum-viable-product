@@ -79,7 +79,7 @@ class InsertLayerCommand implements Command {
 
       // Call the deleteLayer API mutation to delete the layers in the database
       localStorage.setItem("layers", JSON.stringify(remainingLayers));
-        localStorage.setItem("layerIds", JSON.stringify(remainingLayerIds));
+      localStorage.setItem("layerIds", JSON.stringify(remainingLayerIds));
     }
 }
 
@@ -104,11 +104,12 @@ class DeleteLayerCommand implements Command {
             });
 
             // Call the deleteLayer API mutation to delete all the layers in the database
-            this.setLiveLayers(remainingLayers);
-            this.setLiveLayerIds(remainingLayerIds);
 
             localStorage.setItem("layers", JSON.stringify(remainingLayers));
             localStorage.setItem("layerIds", JSON.stringify(remainingLayerIds));
+
+            this.setLiveLayers(remainingLayers);
+            this.setLiveLayerIds(remainingLayerIds);
         }
 
         undo() {
@@ -193,15 +194,14 @@ export const Canvas = () => {
     const [pinchStartDist, setPinchStartDist] = useState<number | null>(null);
     const [rightClickPanning, setIsRightClickPanning] = useState(false);
     const [startPanPoint, setStartPanPoint] = useState({ x: 0, y: 0 });
-    const [selectedImage, setSelectedImage] = useState<string>("");
     const [currentPreviewLayer, setCurrentPreviewLayer] = useState<PreviewLayer | null>(null);
     const [activeTouches, setActiveTouches] = useState(0);
     const [pathColor, setPathColor] = useState({ r: 1, g: 1, b: 1, a: 1 });
     const [pathStrokeSize, setPathStrokeSize] = useState(4);
 
     useEffect(() => {
-        const storedLayers = localStorage.getItem('layers');
-        const storedLayerIds = localStorage.getItem('layerIds');
+        const storedLayers = localStorage.getItem("layers");
+        const storedLayerIds = localStorage.getItem("layerIds");
         if (storedLayers) {
             setLiveLayers(JSON.parse(storedLayers));
         }
@@ -217,6 +217,8 @@ export const Canvas = () => {
         setHistory([...history, command]);
         setRedoStack([]); // clear redo stack when new action is performed
     };
+
+    console.log(liveLayersId)
 
     const undo = () => {
         const lastCommand = history[history.length - 1];
@@ -303,7 +305,6 @@ export const Canvas = () => {
                 outlineFill: { r: 1, g: 1, b: 1, a: 1 },
             };
         }
-
         const newLayers = { ...liveLayers, [layerId]: layer };
         const newLayerIds = [...liveLayersId, layerId];
 
@@ -321,7 +322,7 @@ export const Canvas = () => {
         localStorage.setItem("layers", JSON.stringify(newLayers));
 
         setCanvasState({ mode: CanvasMode.None });
-    }, [liveLayers, liveLayersId]);
+    }, [liveLayers, liveLayersId, selectedLayersRef]);
 
     const translateSelectedLayers = useCallback((point: Point) => {
         if (canvasState.mode !== CanvasMode.Translating) {
@@ -942,19 +943,19 @@ export const Canvas = () => {
             maxX = Math.max(maxX, layer.x + layer.width);
             maxY = Math.max(maxY, layer.y + layer.height);
         });
-
+    
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
-
+    
         const offsetX = mousePosition.x - centerX;
         const offsetY = mousePosition.y - centerY;
-
-        const localStorageLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');
-        const localStorageLiveLayersIds = JSON.parse(localStorage.getItem("layerIds") || '{}');
-
+    
+        const prevLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');
+        const prevLiveLayerIds = JSON.parse(localStorage.getItem("layerIds") || '[]');
+    
         const newSelection = [];
-        const newLiveLayers = { ...localStorageLiveLayers };
-        const newLiveLayerIds = [...localStorageLiveLayersIds];
+        const newLiveLayers = { ...prevLiveLayers };
+        const newLiveLayerIds = [...prevLiveLayerIds];
         copiedLayers.forEach((layer) => {
             const newId = nanoid();
             newSelection.push(newId);
@@ -968,15 +969,15 @@ export const Canvas = () => {
             }
             newLiveLayers[newId] = clonedLayer;
         });
-        
-        const command = new InsertLayerCommand(newLiveLayerIds, newLiveLayerIds, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId);
+    
+        const command = new InsertLayerCommand(newLiveLayerIds, Object.values(newLiveLayers), prevLiveLayers, prevLiveLayerIds, setLiveLayers, setLiveLayersId);
         performAction(command);
-
+    
         setLiveLayers(newLiveLayers);
         setLiveLayersId(newLiveLayerIds);
         localStorage.setItem("layers", JSON.stringify(newLiveLayers));
         localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
-    }, [copiedLayers]);
+    }, [copiedLayers, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId, performAction]);
 
     useEffect(() => {
         const onPointerDown = (e: PointerEvent) => {
@@ -1166,6 +1167,7 @@ export const Canvas = () => {
                     zoom={zoom}
                     camera={camera}
                     DeleteLayerCommand={DeleteLayerCommand}
+                    InsertLayerCommand={InsertLayerCommand}
                     performAction={performAction}
                 />
             )}

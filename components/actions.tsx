@@ -40,7 +40,7 @@ export const Actions = ({
         setLiveLayers([]);
         setLiveLayersId([]);
         localStorage.removeItem("layers");
-        localStorage.removeItem("layersId");
+        localStorage.removeItem("layerIds");
         toast.success("Nueva pizarra creada!");
     };
 
