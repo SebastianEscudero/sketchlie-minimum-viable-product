@@ -43,10 +43,10 @@ const LandingPage = () => {
         <div>
             <BlogStructure
                 title="Pizarra online gratis"
-                description="La pizarra online, más rapida y fácil de usar. Explora tus ideas, enseña a tus alumnos, presenta tus proyectos todo en un solo lugar. 100% gratis."
+                description="La pizarra online, más rapida y fácil de usar. Explora tus ideas, enseña a tus alumnos, presenta tus proyectos todo en un solo lugar."
                 cta="Crear tablero gratis"
                 alt="Pizarra online Image"
-                img="/placeholders/pizarra-online.png"
+                img="/placeholders/linea-de-tiempo.png"
             />
             <LogoSlider />
             <LandingVideo />

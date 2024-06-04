@@ -1,18 +1,29 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import html2canvas from 'html2canvas';
 
-import {
+import { 
   ArrowHandle,
-  Camera,
-  Color,
-  Layer,
-  LayerType,
-  PathLayer,
-  Point,
-  Side,
+  Camera, 
+  Color, 
+  Layer, 
+  LayerType, 
+  PathLayer, 
+  Point, 
+  Side, 
   XYWH
 } from "@/types/canvas";
+import { toJpeg, toPng } from 'html-to-image';
+
+const COLORS = [
+  "#DC2626", // Red
+  "#D97706", // Amber
+  "#059669", // Teal
+  "#7C3AED", // Violet
+  "#DB2777",  // Pink
+  "#3AB624", // Emerald
+  "#2E5ADA", // Dark Blue
+  "#6D2AC2", // Purple
+];
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -29,14 +40,25 @@ export function pointerEventToCanvasPoint(
   };
 };
 
+export function connectionIdToColor(connectionId: string): string {
+  let hash = 0;
+  for (let i = 0; i < connectionId.length; i++) {
+      hash = (hash << 5) - hash + connectionId.charCodeAt(i);
+      hash |= 0; // Convert to 32bit integer
+  }
+  const index = Math.abs(hash) % COLORS.length;
+  return COLORS[index];
+};
+
+
 export function colorToCss(color: Color) {
   return `rgba(${color.r},${color.g},${color.b},${color.a})`;
 }
 
 export function resizeBounds(
   type: any,
-  bounds: XYWH,
-  corner: Side,
+  bounds: XYWH, 
+  corner: Side, 
   point: Point,
   textareaRef?: React.RefObject<HTMLTextAreaElement>,
   layer?: Layer
@@ -57,9 +79,9 @@ export function resizeBounds(
   const isCorner = corner === (Side.Top + Side.Left) || corner === (Side.Top + Side.Right) || corner === (Side.Bottom + Side.Left) || corner === (Side.Bottom + Side.Right);
   const aspectRatio = bounds.width / bounds.height;
 
-  if ((type === 3 || type === 5) && isCorner) {
-    let newWidth = Math.abs((corner & Side.Left) === Side.Left ? bounds.x + bounds.width - point.x : point.x - bounds.x);
-    let newHeight = Math.abs(newWidth / aspectRatio);
+  if ((type === LayerType.Text || type === LayerType.Image) && isCorner) {
+    let newWidth = (corner & Side.Left) === Side.Left ? Math.abs(bounds.x + bounds.width - point.x) : Math.abs(point.x - bounds.x);
+    let newHeight = newWidth / aspectRatio;
 
     if ((corner & Side.Left) === Side.Left) {
       result.x = bounds.x + (bounds.width - newWidth);
@@ -106,17 +128,17 @@ export function resizeBounds(
     result.textFontSize = newFontSize
     return result
   }
-  
+
   if (!isCorner && textareaRef && textareaRef.current) {
     result.height = textareaRef.current.scrollHeight;
     return result
-  }
+  } 
 
   return result;
 };
 
 export function resizeArrowBounds(
-  bounds: any,
+  bounds: any, 
   point: Point,
   handle: ArrowHandle,
 ): any {
@@ -151,6 +173,24 @@ export function resizeArrowBounds(
   return result;
 }
 
+
+export function getLayerIdAtPointer(current: Point, layers: { [key: string]: Layer }): string | null {
+  for (const layerId in layers) {
+    const layer = layers[layerId];
+
+    if (
+      current.x >= layer.x &&
+      current.x <= layer.x + layer.width &&
+      current.y >= layer.y &&
+      current.y <= layer.y + layer.height
+    ) {
+      return layerId;
+    }
+  }
+
+  return null;
+}
+
 export function findIntersectingLayersWithRectangle(
   layerIds: readonly string[],
   layers: { [key: string]: Layer },
@@ -173,7 +213,7 @@ export function findIntersectingLayersWithRectangle(
       continue;
     }
 
-    if (layer.type === LayerType.Arrow && layer.center) {
+    if (layer.type === LayerType.Arrow && layer.center || layer.type === LayerType.Line && layer.center) {
       const { x, y, width, height, center } = layer;
       const length = Math.sqrt(width * width + height * height);
       const angle = Math.atan2(center.y - y, center.x - x);
@@ -184,7 +224,7 @@ export function findIntersectingLayersWithRectangle(
 
       if (
         rect.x + rect.width > Math.min(x, end.x) &&
-        rect.x < Math.max(x, end.x) &&
+        rect.x < Math.max(x, end.x) && 
         rect.y + rect.height > Math.min(y, end.y) &&
         rect.y < Math.max(y, end.y)
       ) {
@@ -195,7 +235,7 @@ export function findIntersectingLayersWithRectangle(
 
       if (
         rect.x + rect.width > x &&
-        rect.x < x + width &&
+        rect.x < x + width && 
         rect.y + rect.height > y &&
         rect.y < y + height
       ) {
@@ -206,6 +246,7 @@ export function findIntersectingLayersWithRectangle(
 
   return ids;
 };
+
 export function getContrastingTextColor(color: Color) {
   if (color.r === 0 && color.g === 0 && color.b === 0) {
     return "black";
@@ -281,9 +322,7 @@ export function getSvgPathFromStroke(stroke: number[][]) {
 
 export const NAME = "Sketchlie";
 
-import { toPng } from 'html-to-image';
-
-export const exportToPNG = async () => {
+export const exportToPNG = async (title: string) => {
   const screenShot = document.getElementById("canvas") as HTMLElement;
   
   // Save the current background color and image
@@ -292,19 +331,12 @@ export const exportToPNG = async () => {
 
   // Set the background color and image
   screenShot.style.backgroundColor = '#F4F4F4';
-  screenShot.style.backgroundImage = "url(/dot-grid.png)";
-  screenShot.style.backgroundSize = 'cover';
-
-  // Create a new image and wait for it to load
-  const img = new Image();
-  img.src = "/dot-grid.png";
-  await new Promise((resolve) => img.onload = resolve);
 
   // Now that the image is loaded, take the screenshot
   toPng(screenShot, { quality: 1 }).then((dataUrl) => {
     var anchor = document.createElement("a");
     anchor.setAttribute("href", dataUrl);
-    anchor.setAttribute("download", "tablero.png");
+    anchor.setAttribute("download", `${title}.png`);
     anchor.click();
     anchor.remove();
 
@@ -312,4 +344,8 @@ export const exportToPNG = async () => {
     screenShot.style.backgroundColor = originalBackgroundColor;
     screenShot.style.backgroundImage = originalBackgroundImage;
   })
+};
+
+export const exportToSVG = async (title: string) => {
+  // implement
 };

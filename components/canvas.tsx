@@ -137,7 +137,7 @@ class TranslateLayersCommand implements Command {
     constructor(
         private layerIds: string[],
         private initialLayers: any,
-        private finalLayers: any,
+        public finalLayers: any,
         private setLiveLayers: (layers: any) => void,) {}
 
     execute() {
@@ -172,6 +172,11 @@ if (typeof window !== 'undefined') {
 }
 
 export const Canvas = () => {
+    const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
+    const [isShapesMenuOpen, setIsShapesMenuOpen] = useState(false);
+    const [isPenEraserSwitcherOpen, setIsPenEraserSwitcherOpen] = useState(false);
+    const [selectedTool, setSelectedTool] = useState(CanvasMode.None);
+    const [showingSelectionBox, setShowingSelectionBox] = useState(false);
     const [initialLayers, setInitialLayers] = useState<Layers>({}); // used for undo/redo
     const [history, setHistory] = useState<Command[]>([]);
     const [redoStack, setRedoStack] = useState<Command[]>([]);
@@ -185,7 +190,7 @@ export const Canvas = () => {
     const cameraRef = useRef(camera);
     const [copiedLayers, setCopiedLayers] = useState<Map<string, any>>(new Map());
     const [pencilDraft, setPencilDraft] = useState<number[][]>([[]]);
-    const [textRef, setTextRef] = useState<any>(null);
+    const [layerRef, setLayerRef] = useState<any>(null);
     const [canvasState, setCanvasState] = useState<CanvasState>({
         mode: CanvasMode.None,
     });
@@ -218,8 +223,6 @@ export const Canvas = () => {
         setRedoStack([]); // clear redo stack when new action is performed
     };
 
-    console.log(liveLayersId)
-
     const undo = () => {
         const lastCommand = history[history.length - 1];
         lastCommand.undo();
@@ -240,7 +243,6 @@ export const Canvas = () => {
         let layer;
         let fillColor = { r: 0, g: 0, b: 0, a: 0 }
         if (layerType === LayerType.Note) {
-
             if (width < 20 && height < 20) {
                 width = 80
                 height = 80
@@ -288,13 +290,21 @@ export const Canvas = () => {
                 startArrowHead: ArrowHead.None,
                 endArrowHead: ArrowHead.Triangle,
             };
+        } else if (layerType === LayerType.Line) {
+            layer = {
+                type: layerType,
+                x: position.x,
+                y: position.y,
+                center: center,
+                height: height,
+                width: width,
+                fill: fillColor,
+            };
         } else {
-            
             if (width < 20 && height < 20) {
                 width = 80
                 height = 80
             }
-
             layer = {
                 type: layerType,
                 x: position.x,
@@ -303,7 +313,8 @@ export const Canvas = () => {
                 width: width,
                 fill: fillColor,
                 outlineFill: { r: 1, g: 1, b: 1, a: 1 },
-            };
+                textFontSize: 12,
+            }; 
         }
         const newLayers = { ...liveLayers, [layerId]: layer };
         const newLayerIds = [...liveLayersId, layerId];
@@ -320,6 +331,7 @@ export const Canvas = () => {
 
         localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
         localStorage.setItem("layers", JSON.stringify(newLayers));
+        setShowingSelectionBox(true);
 
         setCanvasState({ mode: CanvasMode.None });
     }, [liveLayers, liveLayersId, selectedLayersRef]);
@@ -335,6 +347,7 @@ export const Canvas = () => {
         };
 
         const newLayers = { ...liveLayers };
+        const updatedLayers: any = [];
 
         selectedLayersRef.current.forEach(id => {
             const layer = newLayers[id];
@@ -343,21 +356,21 @@ export const Canvas = () => {
                 const newLayer = { ...layer };
                 newLayer.x += offset.x;
                 newLayer.y += offset.y;
-                if (newLayer.type === LayerType.Arrow && newLayer.center) {
+                if (newLayer.type === LayerType.Arrow && newLayer.center || newLayer.type === LayerType.Line && newLayer.center) {
                     const newCenter = {
                         x: newLayer.center.x + offset.x,
                         y: newLayer.center.y + offset.y
                     };
                     newLayer.center = newCenter;
                 }
+                updatedLayers.push(newLayer);
                 newLayers[id] = newLayer;
             }
         });
 
         setLiveLayers(newLayers);
-        localStorage.setItem("layers", JSON.stringify(newLayers));
         setCanvasState({ mode: CanvasMode.Translating, current: point });
-    }, [canvasState, liveLayers, selectedLayersRef]);
+    }, [canvasState, selectedLayersRef.current, setCanvasState, setLiveLayers, liveLayers]);
 
     const unselectLayers = useCallback(() => {
         if (selectedLayersRef.current.length > 0) {
@@ -400,7 +413,7 @@ export const Canvas = () => {
 
     const continueDrawing = useCallback((point: Point, e: React.PointerEvent) => {
         if (
-            canvasState.mode !== CanvasMode.Pencil ||
+            (canvasState.mode !== CanvasMode.Pencil && canvasState.mode !== CanvasMode.Laser && canvasState.mode !== CanvasMode.Highlighter) ||
             e.buttons !== 1 ||
             pencilDraft == null
         ) {
@@ -443,7 +456,38 @@ export const Canvas = () => {
         setCanvasState({ mode: CanvasMode.Pencil });
     }, [pencilDraft, liveLayers, liveLayersId]);
 
+    const insertHighlight = useCallback(() => {
+        if (
+            pencilDraft == null ||
+            pencilDraft.length < 2
+        ) {
+            setPencilDraft([[]]);
+            return;
+        }
+
+        const id = nanoid();
+        liveLayers[id] = penPointsToPathLayer(pencilDraft, { ...pathColor, a: 0.5 }, 30 / zoom);
+
+        const command = new InsertLayerCommand(
+            [id], 
+            [liveLayers[id]], 
+            { ...liveLayers }, 
+            [...liveLayersId], 
+            setLiveLayers, 
+            setLiveLayersId
+        );
+
+        setPencilDraft([[]]);
+        performAction(command); 
+
+        setCanvasState({ mode: CanvasMode.Highlighter });
+    }, [pencilDraft, liveLayers, liveLayersId]);
+
     const startDrawing = useCallback((point: Point, pressure: number) => {
+        if (activeTouches > 1) {
+            return;
+        }
+
         const pencilDraft = [[point.x, point.y, pressure]];
         setPencilDraft(pencilDraft);
         localStorage.setItem("pencilDraft", JSON.stringify(pencilDraft));
@@ -460,7 +504,7 @@ export const Canvas = () => {
                     canvasState.initialBounds,
                     canvasState.corner,
                     point,
-                    textRef,
+                    layerRef,
                     layer,
                 );
             } else {
@@ -493,7 +537,7 @@ export const Canvas = () => {
             setLiveLayers({ ...liveLayers });
             localStorage.setItem("layers", JSON.stringify(liveLayers));
         }
-    }, [canvasState, liveLayers, selectedLayersRef, textRef]);
+    }, [canvasState, liveLayers, selectedLayersRef, layerRef]);
 
     const onResizeHandlePointerDown = useCallback((
         corner: Side,
@@ -565,6 +609,14 @@ export const Canvas = () => {
 
         if (e.button === 0) {
             if (canvasState.mode === CanvasMode.Eraser) {
+                setIsPenEraserSwitcherOpen(false);
+                setIsPenMenuOpen(false);
+                return;
+            }
+            if (canvasState.mode === CanvasMode.Laser || canvasState.mode === CanvasMode.Pencil || canvasState.mode === CanvasMode.Highlighter) {
+                setIsPenEraserSwitcherOpen(false);
+                setIsPenMenuOpen(false);
+                startDrawing(point, e.pressure);
                 return;
             }
             if (canvasState.mode === CanvasMode.Moving) {
@@ -581,11 +633,6 @@ export const Canvas = () => {
                     setIsPanning(false);
                     return;
                 }
-            }
-
-            if (canvasState.mode === CanvasMode.Pencil) {
-                startDrawing(point, e.pressure);
-                return;
             }
 
             setCanvasState({ origin: point, mode: CanvasMode.Pressing });
@@ -634,7 +681,7 @@ export const Canvas = () => {
             resizeSelectedLayer(current);
         } else if (canvasState.mode === CanvasMode.ArrowResizeHandler) {
             resizeSelectedLayer(current);
-        } else if (canvasState.mode === CanvasMode.Pencil) {
+        } else if (canvasState.mode === CanvasMode.Pencil && e.buttons === 1 || canvasState.mode === CanvasMode.Laser && e.buttons === 1 || canvasState.mode === CanvasMode.Highlighter && e.buttons === 1) {
             continueDrawing(current, e);
         } else if (
             e.buttons === 1 &&
@@ -660,13 +707,40 @@ export const Canvas = () => {
 
             switch (canvasState.layerType) {
                 case LayerType.Rectangle:
-                    setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.Triangle:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Triangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.Star:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Star, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.Hexagon:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Hexagon, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.BigArrowLeft:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowLeft, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.BigArrowRight:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowRight, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.BigArrowUp:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowUp, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.BigArrowDown:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowDown, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.CommentBubble:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.CommentBubble, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    break;
+                case LayerType.Rhombus:
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Rhombus, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
                     break;
                 case LayerType.Ellipse:
-                    setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Ellipse, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Ellipse, textFontSize: 12, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
                     break;
                 case LayerType.Text:
-                    setCurrentPreviewLayer({ x, y, width, height: 18, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 39, g: 142, b: 237, a: 1 } })
+                    setCurrentPreviewLayer({ x, y, width, height: 18, textFontSize: 12, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 39, g: 142, b: 237, a: 1 } });
                     break;
                 case LayerType.Note:
                     setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Note, fill: { r: 255, g: 249, b: 177, a: 1 }, outlineFill: { r: 0, g: 0, b: 0, a: 0 } });
@@ -683,6 +757,18 @@ export const Canvas = () => {
                         startArrowHead: ArrowHead.None,
                         endArrowHead: ArrowHead.Triangle
                     });
+                    break;
+                case LayerType.Line:
+                    setCurrentPreviewLayer({
+                        x: startPanPoint.x,
+                        y: startPanPoint.y,
+                        center: { x: startPanPoint.x + widthArrow / 2, y: startPanPoint.y + heightArrow / 2 },
+                        width: widthArrow,
+                        height: heightArrow,
+                        type: LayerType.Line,
+                        fill: { r: 0, g: 0, b: 0, a: 0 },
+                    });
+                    break;
             }
         }
     },
@@ -702,115 +788,188 @@ export const Canvas = () => {
             activeTouches
         ]);
 
-    const onPointerUp = useCallback((e: React.PointerEvent) => {
-        setIsRightClickPanning(false);
-        const point = pointerEventToCanvasPoint(e, camera, zoom);
-        if (
-            canvasState.mode === CanvasMode.None ||
-            canvasState.mode === CanvasMode.Pressing
-        ) {
-            document.body.style.cursor = 'default';
-            unselectLayers();
-            setCanvasState({
-                mode: CanvasMode.None,
-            });
-        } else if (canvasState.mode === CanvasMode.Pencil) {
-            document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 8 8, auto';
-            insertPath();
-        } else if (canvasState.mode === CanvasMode.Eraser) {
-            document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
-            return;
-        } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
-            const layerType = canvasState.layerType;
-            setIsPanning(false);
-            if (isPanning && currentPreviewLayer) {
-                if (layerType === LayerType.Arrow && currentPreviewLayer.type === LayerType.Arrow) {
-                    insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height, currentPreviewLayer.center)
-                    setCurrentPreviewLayer(null);
+        const onPointerUp = useCallback((e: React.PointerEvent) => {    
+            setIsRightClickPanning(false);
+            const point = pointerEventToCanvasPoint(e, camera, zoom);
+            if (canvasState.mode === CanvasMode.SelectionNet) {
+                if (selectedLayersRef.current.length > 0) {
+                    setShowingSelectionBox(true);
                 } else {
-                    insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height);
-                    setCurrentPreviewLayer(null);
-                }
-            } else if (layerType !== LayerType.Arrow) {
-                let width
-                let height
-                if (layerType === LayerType.Text) {
-                    width = 95;
-                    height = 18;
-                    point.x = point.x - width / 2
-                    point.y = point.y - height / 2
-                    insertLayer(layerType, point, width, height)
-                } else {
-                    width = 80;
-                    height = 80;
-                    point.x = point.x - width / 2
-                    point.y = point.y - height / 2
-                    insertLayer(layerType, point, width, height);
+                    setShowingSelectionBox(false);
                 }
             }
-        } else if (canvasState.mode === CanvasMode.Moving) {
-            document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
-            setIsPanning(false);
-        } else if (canvasState.mode === CanvasMode.Translating) {
-            let layerIds: any = [];
-            let layerUpdates: any = [];        
-            selectedLayersRef.current.forEach(id => {
-                const newLayer = liveLayers[id];
-                if (newLayer) {
-                    layerIds.push(id);
-                    layerUpdates.push(newLayer);
-                }
-            });
-        
-            if (layerIds.length > 0) {
-                const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
-                performAction(command);
+    
+            if (canvasState.mode !== CanvasMode.Translating && canvasState.mode !== CanvasMode.SelectionNet) {
+                setShowingSelectionBox(false)
             }
-            setCanvasState({
-                mode: CanvasMode.None,
-            });
-        } else if (canvasState.mode === CanvasMode.Resizing || canvasState.mode === CanvasMode.ArrowResizeHandler) {
-            let layerIds: any = [];
-            let layerUpdates: any = [];
-
-            selectedLayersRef.current.forEach(id => {
-                const newLayer = liveLayers[id];
-                if (newLayer) {
-                    layerIds.push(id);
-                    layerUpdates.push(newLayer);
+    
+            if (
+                canvasState.mode === CanvasMode.None ||
+                canvasState.mode === CanvasMode.Pressing
+            ) {
+                document.body.style.cursor = 'default';
+                unselectLayers();
+                setCanvasState({
+                    mode: CanvasMode.None,
+                });
+            } else if (canvasState.mode === CanvasMode.Pencil) {
+                document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 2 18, auto';
+                insertPath();
+            } else if (canvasState.mode === CanvasMode.Highlighter) {
+                document.body.style.cursor = 'url(/custom-cursors/highlighter.svg) 2 18, auto';
+                insertHighlight();
+            } else if (canvasState.mode === CanvasMode.Laser) {
+                document.body.style.cursor = 'url(/custom-cursors/laser.svg) 4 18, auto';
+                setPencilDraft([]);
+            } else if (canvasState.mode === CanvasMode.Eraser) {
+                document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
+                return;
+            } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
+    
+                if (e.button === 2 || e.button === 1) {
+                    document.body.style.cursor = 'url(/custom-cursors/inserting.svg) 12 12, auto';
+                    return;
                 }
-            });
-
-            if (layerIds.length > 0) {
-                const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
-                performAction(command);
+    
+                const layerType = canvasState.layerType;
+                setIsPanning(false);
+                if (isPanning && currentPreviewLayer) {
+                    if (layerType === LayerType.Arrow && currentPreviewLayer.type === LayerType.Arrow
+                        || layerType === LayerType.Line && currentPreviewLayer.type === LayerType.Line
+                    ) {
+                        insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height, currentPreviewLayer.center)
+                        setCurrentPreviewLayer(null);
+                    } else {
+                        insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height);
+                        setCurrentPreviewLayer(null);
+                    }
+                } else if (layerType !== LayerType.Arrow && layerType !== LayerType.Line) {
+                    let width
+                    let height
+                    if (layerType === LayerType.Text) {
+                        width = 95;
+                        height = 18;
+                        point.x = point.x - width / 2
+                        point.y = point.y - height / 2
+                        insertLayer(layerType, point, width, height)
+                    } else {
+                        width = 80;
+                        height = 80;
+                        point.x = point.x - width / 2
+                        point.y = point.y - height / 2
+                        insertLayer(layerType, point, width, height);
+                    }
+                }
+            } else if (canvasState.mode === CanvasMode.Moving) {
+                document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
+                setIsPanning(false);
+            } else if (canvasState.mode === CanvasMode.Translating) {
+                let layerIds: any = [];
+                let layerUpdates: any = [];
+                selectedLayersRef.current.forEach(id => {
+                    const newLayer = liveLayers[id];
+                    if (newLayer) {
+                        layerIds.push(id);
+                        layerUpdates.push(newLayer);
+                    }
+                });
+    
+                if (layerIds.length > 0) {
+                    let lastState;
+                    if (history.length > 0) {
+                        lastState = (history[history.length - 1] as TranslateLayersCommand).finalLayers;
+                    }
+    
+                    // Compare the initialLayers with the finalLayers of the last history state
+                    if (!lastState || JSON.stringify(liveLayers) !== JSON.stringify(lastState)) {
+                        const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
+                        performAction(command);
+                    }
+                }
+    
+                setShowingSelectionBox(true);
+                if (selectedLayersRef.current.length === 1 && showingSelectionBox) {
+                    const layerType = liveLayers[selectedLayersRef.current[0]].type;
+                    const initialLayer = JSON.stringify(initialLayers[selectedLayersRef.current[0]]);
+                    const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
+                    const changed = initialLayer !== liveLayer;
+                    console.log(changed);
+                    if ((layerType === LayerType.Text 
+                        || layerType === LayerType.Note 
+                        || layerType === LayerType.Rectangle
+                        || layerType === LayerType.Ellipse 
+                        || layerType === LayerType.Rhombus
+                        || layerType === LayerType.Triangle
+                        || layerType === LayerType.Star
+                        || layerType === LayerType.Hexagon
+                        || layerType === LayerType.BigArrowLeft
+                        || layerType === LayerType.BigArrowRight
+                        || layerType === LayerType.BigArrowUp
+                        || layerType === LayerType.BigArrowDown
+                        || layerType === LayerType.CommentBubble)
+                        && !changed && layerRef.current) {
+                        const layer = layerRef.current;
+                        layer.focus();
+    
+                        const range = document.createRange();
+                        range.selectNodeContents(layer);
+                        range.collapse(false);
+    
+                        const selection = window.getSelection();
+                        selection?.removeAllRanges();
+                        selection?.addRange(range);
+                        if (layer.value || layer.value === "") {
+                            layer.selectionStart = layer.selectionEnd = layer.value.length;
+                        }
+                    }
+                }   
+    
+                setCanvasState({
+                    mode: CanvasMode.None,
+                });
+            } else if (canvasState.mode === CanvasMode.Resizing || canvasState.mode === CanvasMode.ArrowResizeHandler) {
+                setShowingSelectionBox(true);
+                let layerIds: any = [];
+                let layerUpdates: any = [];
+                selectedLayersRef.current.forEach(id => {
+                    const newLayer = liveLayers[id];
+                    if (newLayer) {
+                        layerIds.push(id);
+                        layerUpdates.push(newLayer);
+                    }
+                });
+    
+                if (layerIds.length > 0) {
+                    const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
+                    performAction(command);
+                }
+                setCanvasState({
+                    mode: CanvasMode.None,
+                });
+            } else {
+                document.body.style.cursor = 'default';
+                setCanvasState({
+                    mode: CanvasMode.None,
+                });
             }
-            setCanvasState({
-                mode: CanvasMode.None,
-            });
-        } else {
-            document.body.style.cursor = 'default';
-            setCanvasState({
-                mode: CanvasMode.None,
-            });
-        }
-
-    },
-        [
-            isPanning,
-            currentPreviewLayer,
-            setCanvasState,
-            camera,
-            canvasState,
-            insertLayer,
-            unselectLayers,
-            insertPath,
-            setIsPanning,
-            zoom,
-            initialLayers,
-            liveLayers,
-            selectedLayersRef,
-        ]);
+        },
+            [
+                setCanvasState,
+                canvasState,
+                insertLayer,
+                unselectLayers,
+                insertPath,
+                setIsPanning,
+                selectedLayersRef,
+                liveLayers,
+                camera,
+                zoom,
+                currentPreviewLayer,
+                isPanning,
+                initialLayers,
+                history,
+                layerRef,
+            ]);
 
         const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
             if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
@@ -832,7 +991,9 @@ export const Canvas = () => {
             canvasStateRef.current.mode === CanvasMode.Inserting ||
             canvasStateRef.current.mode === CanvasMode.Moving ||
             canvasStateRef.current.mode === CanvasMode.Eraser ||
-            e.button !== 0
+            canvasStateRef.current.mode === CanvasMode.Laser ||
+            canvasStateRef.current.mode === CanvasMode.Highlighter ||
+            e.button !== 0 
         ) {
             return;
         }
@@ -984,9 +1145,9 @@ export const Canvas = () => {
             const deepCopy = JSON.parse(JSON.stringify(liveLayers));
             setInitialLayers(deepCopy);
         }
-    
+
         document.addEventListener('pointerdown', onPointerDown);
-    
+
         return () => {
             document.removeEventListener('pointerdown', onPointerDown);
         }
@@ -1093,10 +1254,16 @@ export const Canvas = () => {
             }
         } else if (canvasState.mode === CanvasMode.Pencil) {
             document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 2 18, auto';
+        } else if (canvasState.mode === CanvasMode.Highlighter) {
+            document.body.style.cursor = 'url(/custom-cursors/highlighter.svg) 2 18, auto';
+        } else if (canvasState.mode === CanvasMode.Laser) {
+            document.body.style.cursor = 'url(/custom-cursors/laser.svg) 4 18, auto';
         } else if (canvasState.mode === CanvasMode.Eraser) {
             document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
         } else if (canvasState.mode === CanvasMode.Moving) {
             document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
+        } else if (canvasState.mode === CanvasMode.ArrowResizeHandler) {
+            document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
         } else {
             document.body.style.cursor = 'default';
         }
@@ -1132,13 +1299,20 @@ export const Canvas = () => {
     }, []);
 
     return (
-        <main className="fixed h-full w-full bg-neutral-100 touch-none overscroll-none"
+        <main
+            className={`fixed h-full w-full bg-neutral-100 touch-none overscroll-none`}
             style={{
-                backgroundImage: "url(/dot-grid.png)",
-                backgroundSize: 'cover',
+                background: `
+                  linear-gradient(0deg, rgba(0,0,0,0.05) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px),
+                  #f4f4f4
+                `,
+                backgroundSize: `${65 * zoom}px ${65 * zoom}px`, // Adjust the size based on the zoom level
+                backgroundPosition: `${camera.x}px ${camera.y}px`,
                 WebkitOverflowScrolling: 'touch',
                 WebkitUserSelect: 'none',
-            }}>
+            }}
+        >
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
             <Info
                 setLiveLayers={setLiveLayers}
@@ -1147,15 +1321,24 @@ export const Canvas = () => {
             <SketchlieBlock />
             <BottomCanvasLinks />
             <Toolbar
-                pathStrokeSize={pathStrokeSize}
-                setPathColor={setPathColor}
-                setPathStrokeSize={setPathStrokeSize}
-                canvasState={canvasState}
-                setCanvasState={setCanvasState}
-                undo={undo}
-                redo={redo}
-                canUndo={history.length > 0}
-                canRedo={redoStack.length > 0}
+              pathColor={pathColor}
+              pathStrokeSize={pathStrokeSize}
+              setPathColor={setPathColor}
+              setPathStrokeSize={setPathStrokeSize}
+              canvasState={canvasState}
+              setCanvasState={setCanvasState}
+              undo={undo}
+              redo={redo}
+              canUndo={history.length > 0}
+              canRedo={redoStack.length > 0}
+              isPenMenuOpen={isPenMenuOpen}
+              setIsPenMenuOpen={setIsPenMenuOpen}
+              isShapesMenuOpen={isShapesMenuOpen}
+              setIsShapesMenuOpen={setIsShapesMenuOpen}
+              isPenEraserSwitcherOpen={isPenEraserSwitcherOpen}
+              setIsPenEraserSwitcherOpen={setIsPenEraserSwitcherOpen}
+              selectedTool={selectedTool}
+              setSelectedTool={setSelectedTool}  
             />
             {canvasState.mode === CanvasMode.None && (
                 <SelectionTools
@@ -1196,7 +1379,7 @@ export const Canvas = () => {
                             key={layerId}
                             id={layerId}
                             onLayerPointerDown={onLayerPointerDown}
-                            onRefChange={setTextRef}
+                            onRefChange={setLayerRef}
                             zoomRef={zoomRef}
                         />
                     ))}
@@ -1229,15 +1412,29 @@ export const Canvas = () => {
                             height={Math.abs(canvasState.origin.y - canvasState.current.y)}
                         />
                     )}
-                    {pencilDraft != null && pencilDraft.length > 0 && pencilDraft[0].length > 0 && !pencilDraft.some(array => array.some(isNaN)) && (
-                        <Path
-                            points={pencilDraft}
-                            fill={colorToCss(pathColor)}
-                            x={0}
-                            y={0}
-                            strokeSize={pathStrokeSize}
-                        />
-                    )}
+                    {
+                        pencilDraft != null && pencilDraft.length > 0 && pencilDraft[0].length > 0 && !pencilDraft.some(array => array.some(isNaN)) && (
+                            <Path
+                                points={pencilDraft}
+                                fill={
+                                    canvasState.mode === CanvasMode.Laser
+                                        ? '#F35223'
+                                        : canvasState.mode === CanvasMode.Highlighter
+                                            ? colorToCss({ ...pathColor, a: 0.5 }) // Semi-transparent yellow
+                                            : colorToCss(pathColor)
+                                }
+                                x={0}
+                                y={0}
+                                strokeSize={
+                                    canvasState.mode === CanvasMode.Laser
+                                        ? 5 / zoom
+                                        : canvasState.mode === CanvasMode.Highlighter
+                                            ? 30 / zoom // Increase stroke size for highlighter
+                                            : pathStrokeSize
+                                }
+                            />
+                        )
+                    }
                 </g>
             </svg>
         </main>

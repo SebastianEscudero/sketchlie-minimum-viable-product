@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+
 import { cn } from "@/lib/utils"
 import {
     NavigationMenu,
@@ -12,6 +14,37 @@ import {
 } from "@/components/ui/navigation-menu"
 import { usePathname } from "next/navigation"
 import { Button } from "./ui/button"
+
+const porEquipo: { title: string; href: string }[] = [
+    {
+        title: "Gestión de producto 🚧",
+        href: "https://www.sketchlie.com/gestion-producto",
+    },
+    {
+        title: "Equipos de Ingeniería 🚧",
+        href: "https://www.sketchlie.com/equipos-de-ingenieria",
+    },
+    {
+        title: "Diseño",
+        href: "https://www.sketchlie.com/diseno/",
+    },
+    {
+        title: "Equipos de IT 🚧",
+        href: "https://www.sketchlie.com/equipos-de-it",
+    },
+    {
+        title: "Marketing 🚧",
+        href: "https://www.sketchlie.com/marketing",
+    },
+    {
+        title: "Agencias y Consultorías 🚧",
+        href: "https://www.sketchlie.com/agencias-consultorías",
+    },
+    {
+        title: "Ventas 🚧",
+        href: "https://www.sketchlie.com/ventas",
+    },
+]
 
 const porCasoDeUso: { title: string; href: string }[] = [
     {
@@ -52,35 +85,19 @@ const porCasoDeUso: { title: string; href: string }[] = [
     },
 ]
 
-const porEquipo: { title: string; href: string }[] = [
+const Recursos = [
     {
-        title: "Gestión de producto 🚧",
-        href: "https://www.sketchlie.com/gestion-producto/",
+        title: "Plantillas",
+        href: "https://www.sketchlie.com/plantillas/",
     },
     {
-        title: "Equipos de Ingeniería 🚧",
-        href: "https://www.sketchlie.com/equipos-de-ingenieria/",
+        title: "Blog",
+        href: "https://www.sketchlie.com/blog/",
     },
     {
-        title: "Diseño 🚧",
-        href: "https://www.sketchlie.com/diseno/",
-    },
-    {
-        title: "Equipos de IT 🚧",
-        href: "https://www.sketchlie.com/equipos-de-it/",
-    },
-    {
-        title: "Marketing 🚧",
-        href: "https://www.sketchlie.com/marketing/",
-    },
-    {
-        title: "Agencias y Consultorías 🚧",
-        href: "https://www.sketchlie.com/agencias-consultorías/",
-    },
-    {
-        title: "Ventas 🚧",
-        href: "https://www.sketchlie.com/ventas/",
-    },
+        title: "Tutorial de Sketchlie",
+        href: "https://www.sketchlie.com/blog/pizarra-online-tutorial/",
+    }
 ]
 
 export function NavigationMenuLanding() {
@@ -88,104 +105,107 @@ export function NavigationMenuLanding() {
     const pathname = usePathname();
 
     return (
-        <NavigationMenu className="hidden lg:flex lg:flex-col">
-            <NavigationMenuList>
-                <NavigationMenuItem>
-                    <NavigationMenuTrigger className="text-[16px]">¿Qué es Sketchlie</NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                        <div className="grid w-[400px] gap-3 p-8 md:w-[500px] lg:w-[300px]">
-                            <p className="px-3 text-[16px] mb-4 font-bold">Producto</p>
-                            <NavigationMenuLink
-                                href={"/descripcion"}
-                            >
-                                <Button
-                                    className='w-full justify-start my-[3px] text-[16px]'
-                                    variant={pathname === "/descripcion" ? 'auth' : 'ghost'}
+        <div className="gap-x-2 flex flex-row">
+            <NavigationMenu className="hidden lg:flex lg:flex-col">
+                <NavigationMenuList>
+                    <NavigationMenuItem>
+                        <NavigationMenuTrigger>¿Qué es Sketchlie</NavigationMenuTrigger>
+                        <NavigationMenuContent>
+                            <div className="grid w-[400px] p-6 md:w-[500px] lg:w-[300px]">
+                                <p className="px-3 text-base mb-2 text-neutral-600 font-semibold">Producto</p>
+                                <NavigationMenuLink
+                                    href={"/descripcion"}
                                 >
-                                    Descripcion de Sketchlie 🚧
-                                </Button>
-                            </NavigationMenuLink>
-                        </div>
-                    </NavigationMenuContent>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                    <NavigationMenuTrigger className="text-[16px]">Soluciones</NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                        <div className="grid w-[400px] gap-3 p-10 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                            <div>
-                                <p className="px-3 text-[16px] mb-4 font-bold">Equipos</p>
-                                {porEquipo.map((component) => (
+                                    <Button
+                                        className='w-full justify-start my-[3px] text-base'
+                                        variant={pathname === "/descripcion" ? 'auth' : 'ghost'}
+                                    >
+                                        Descripcion de Sketchlie 🚧
+                                    </Button>
+                                </NavigationMenuLink>
+                            </div>
+                        </NavigationMenuContent>
+                    </NavigationMenuItem>
+                </NavigationMenuList>
+            </NavigationMenu>
+            <NavigationMenu className="hidden lg:flex lg:flex-col">
+                <NavigationMenuList>
+                    <NavigationMenuItem>
+                        <NavigationMenuTrigger>Soluciones</NavigationMenuTrigger>
+                        <NavigationMenuContent>
+                            <div className="grid w-[400px] p-6 md:w-[500px] md:grid-cols-2 lg:w-[600px] gap-x-2">
+                                <div>
+                                    <p className="px-3 text-base mb-2 text-neutral-600 font-semibold">Equipos</p>
+                                    {porEquipo.map((component) => (
+                                        <NavigationMenuLink
+                                            key={component.title}
+                                            href={component.href}
+                                        >
+                                            <Button
+                                                className='w-full justify-start my-[3px] text-base'
+                                                variant={pathname === component.href ? 'auth' : 'ghost'}
+                                            >
+                                                {component.title}
+                                            </Button>
+                                        </NavigationMenuLink>
+                                    ))}
+                                </div>
+                                <div>
+                                    <p className="px-3 text-base mb-2 text-neutral-600 font-semibold">Casos de uso</p>
+                                    {porCasoDeUso.map((component) => (
+                                        <NavigationMenuLink
+                                            key={component.title}
+                                            href={component.href}
+                                        >
+                                            <Button
+                                                className='w-full justify-start my-[3px] text-base'
+                                                variant={pathname === component.href ? 'auth' : 'ghost'}
+                                            >
+                                                {component.title}
+                                            </Button>
+                                        </NavigationMenuLink>
+                                    ))}
+                                </div>
+                            </div>
+                        </NavigationMenuContent>
+                    </NavigationMenuItem>
+                </NavigationMenuList>
+            </NavigationMenu>
+            <NavigationMenu className="hidden lg:flex lg:flex-col">
+                <NavigationMenuList>
+                    <NavigationMenuItem>
+                        <NavigationMenuTrigger>Recursos</NavigationMenuTrigger>
+                        <NavigationMenuContent>
+                            <div className="p-6 md:w-[500px] lg:w-[300px] flex flex-col">
+                                <p className="px-3 text-base mb-2 text-neutral-600 font-semibold">Recursos</p>
+                                {Recursos.map((recurso) => (
                                     <NavigationMenuLink
-                                        key={component.title}
-                                        href={component.href}
+                                        key={recurso.title}
+                                        href={recurso.href}
                                     >
                                         <Button
-                                            className='w-full justify-start my-[3px] text-[16px]'
-                                            variant={pathname === component.href ? 'auth' : 'ghost'}
+                                            className='justify-start my-[3px] text-base mr-2 w-full'
+                                            variant={pathname === recurso.href ? 'auth' : 'ghost'}
                                         >
-                                            {component.title}
+                                            {recurso.title}
                                         </Button>
                                     </NavigationMenuLink>
                                 ))}
                             </div>
-                            <div>
-                                <p className="px-3 text-[16px] mb-4 font-bold">Casos de uso</p>
-                                {porCasoDeUso.map((component) => (
-                                    <NavigationMenuLink
-                                        key={component.title}
-                                        href={component.href}
-                                    >
-                                        <Button
-                                            className='w-full justify-start my-[3px] text-[16px]'
-                                            variant={pathname === component.href ? 'auth' : 'ghost'}
-                                        >
-                                            {component.title}
-                                        </Button>
-                                    </NavigationMenuLink>
-                                ))}
-                            </div>
-                        </div>
-                    </NavigationMenuContent>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                    <NavigationMenuLink
-                        href={"https://www.sketchlie.com/blog/"}
-                    >
-                        <Button
-                            className='justify-start my-[3px] text-[16px] mr-2'
-                            variant={pathname === "/blog/" ? 'auth' : 'ghost'}
-                        >
-                            Blog
-                        </Button>
-                    </NavigationMenuLink>
-                </NavigationMenuItem>
-            </NavigationMenuList>
-        </NavigationMenu>
+                        </NavigationMenuContent>
+                    </NavigationMenuItem>
+                </NavigationMenuList>
+            </NavigationMenu>
+            <Link
+                href="/pricing/"
+            >
+                <Button
+                    className='justify-start my-[3px] text-base hidden lg:flex'
+                    variant={pathname === "/pricing/" ? 'auth' : 'ghost'}
+                >
+                    Precios
+                </Button>
+            </Link>
+        </div>
     )
 }
-
-const ListItem = React.forwardRef<
-    React.ElementRef<"a">,
-    React.ComponentPropsWithoutRef<"a">
->(({ className, title, children, ...props }, ref) => {
-    return (
-        <li>
-            <NavigationMenuLink asChild>
-                <a
-                    ref={ref}
-                    className={cn(
-                        "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground hover:underline",
-                        className
-                    )}
-                    {...props}
-                >
-                    <div className="text-sm font-medium leading-none">{title}</div>
-                    <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        {children}
-                    </p>
-                </a>
-            </NavigationMenuLink>
-        </li>
-    )
-})
-ListItem.displayName = "ListItem"

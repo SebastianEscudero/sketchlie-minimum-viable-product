@@ -16,7 +16,7 @@ interface SelectionBoxProps {
   camera: any;
 };
 
-const HANDLE_SIZE = 6;
+const HANDLE_SIZE = 8;
 const STROKE_WIDTH = 2.5;
 
 export const SelectionBox = memo(({
@@ -26,7 +26,7 @@ export const SelectionBox = memo(({
   selectedLayers,
   liveLayers,
   setCanvasState,
-  camera
+  camera,
 }: SelectionBoxProps) => {
 
   const handleRightClick = (event: React.MouseEvent) => {
@@ -54,7 +54,7 @@ export const SelectionBox = memo(({
   const isArrowLayer = useMemo(() => {
     if (soleLayerId) {
       const soleLayer = liveLayers[soleLayerId];
-      return soleLayer && soleLayer.type === LayerType.Arrow;
+      return soleLayer && soleLayer.type === LayerType.Arrow || soleLayer && soleLayer.type === LayerType.Line;
     }
     return false;
   }, [soleLayerId, liveLayers]);
@@ -74,7 +74,7 @@ export const SelectionBox = memo(({
     return (
       <>
         <circle
-          className="fill-white stroke-blue-500"
+          className="fill-white stroke-blue-500 hover:cursor-hand active:cursor-grab"
           cx={arrowLayer.x}
           cy={arrowLayer.y}
           r={handleRadius}
@@ -85,7 +85,7 @@ export const SelectionBox = memo(({
           }}
         />
         <circle
-          className="fill-blue-500 stroke-white"
+          className="fill-blue-500 stroke-white hover:cursor-hand active:cursor-grab"
           cx={arrowLayer?.center?.x}
           cy={arrowLayer?.center?.y}
           r={handleRadius}
@@ -96,7 +96,7 @@ export const SelectionBox = memo(({
           }}
         />
         <circle
-          className="fill-white stroke-blue-500"
+          className="fill-white stroke-blue-500 hover:cursor-hand active:cursor-grab"
           cx={arrowLayer.x + arrowLayer.width}
           cy={arrowLayer.y + arrowLayer.height}
           r={handleRadius}
@@ -111,7 +111,8 @@ export const SelectionBox = memo(({
   }
 
   const handleSize = HANDLE_SIZE / zoom;
-  const strokeWidth = STROKE_WIDTH / zoom / 1.5;
+  const strokeWidth = STROKE_WIDTH / zoom;
+  const sideHandleSize = 5 / zoom;
   return (
     <>
       <rect
@@ -137,8 +138,7 @@ export const SelectionBox = memo(({
       {isShowingHandles && (
         <>
           <rect
-
-            className="fill-white stroke-blue-500"
+            className="fill-white stroke-blue-500 p-4"
             x={0}
             y={0}
             style={{
@@ -155,20 +155,17 @@ export const SelectionBox = memo(({
           />
           {!isTextLayer && (
             <rect
-              className="fill-white stroke-1 stroke-blue-500"
+              className="fill-transparent cursor-ns-resize"
               x={0}
-              y={0}
-              style={{
-                strokeWidth: strokeWidth,
-                cursor: "ns-resize",
-                width: `${handleSize}px`,
-                height: `${handleSize}px`,
-                transform: `
-                  translate(${bounds.x + bounds.width / 2 - handleSize / 2}px, ${bounds.y - handleSize / 2}px)`
-              }}
+              y={-3/zoom}
+              width={bounds.width}
+              height={sideHandleSize} // Adjust this value as needed
               onPointerDown={(e) => {
                 e.stopPropagation();
                 onResizeHandlePointerDown(Side.Top, bounds);
+              }}
+              style={{
+                transform: `translate(${bounds.x}px, ${bounds.y}px)`,
               }}
             />
           )}
@@ -190,20 +187,17 @@ export const SelectionBox = memo(({
             }}
           />
           <rect
-            className="fill-white stroke-blue-500"
-            x={0}
+            className="fill-transparent cursor-ew-resize"
+            x={bounds.width - sideHandleSize + 3/zoom}
             y={0}
-            style={{
-              strokeWidth: strokeWidth,
-              cursor: "ew-resize",
-              width: `${handleSize}px`,
-              height: `${handleSize}px`,
-              transform: `
-                translate(${bounds.x - handleSize / 2 + bounds.width}px, ${bounds.y + bounds.height / 2 - handleSize / 2}px)`
-            }}
+            width={sideHandleSize}
+            height={bounds.height}
             onPointerDown={(e) => {
               e.stopPropagation();
               onResizeHandlePointerDown(Side.Right, bounds);
+            }}
+            style={{
+              transform: `translate(${bounds.x}px, ${bounds.y}px)`,
             }}
           />
           <rect
@@ -225,17 +219,17 @@ export const SelectionBox = memo(({
           />
           {!isTextLayer && (
             <rect
-              className="fill-white stroke-1 stroke-blue-500"
+              className="fill-transparent cursor-ns-resize"
               x={0}
-              y={0}
-              style={{
-                  strokeWidth: strokeWidth,
-                  cursor: "ns-resize", width: `${handleSize}px`,height: `${handleSize}px`,
-                  transform: `translate(${bounds.x + bounds.width / 2 - handleSize / 2}px, ${bounds.y - handleSize / 2 + bounds.height}px)`
-              }}
+              y={bounds.height - sideHandleSize + 3/zoom}
+              width={bounds.width}
+              height={sideHandleSize}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 onResizeHandlePointerDown(Side.Bottom, bounds);
+              }}
+              style={{
+                transform: `translate(${bounds.x}px, ${bounds.y}px)`,
               }}
             />
           )}
@@ -260,23 +254,17 @@ export const SelectionBox = memo(({
             }}
           />
           <rect
-            className="fill-white stroke-blue-500"
-            x={0}
+            className="fill-transparent cursor-ew-resize"
+            x={-3/zoom}
             y={0}
-            style={{
-              strokeWidth: strokeWidth,
-              cursor: "ew-resize",
-              width: `${handleSize}px`,
-              height: `${handleSize}px`,
-              transform: `
-                translate(
-                  ${bounds.x - handleSize / 2}px,
-                  ${bounds.y - handleSize / 2 + bounds.height / 2}px
-                )`
-            }}
+            width={sideHandleSize}
+            height={bounds.height}
             onPointerDown={(e) => {
               e.stopPropagation();
               onResizeHandlePointerDown(Side.Left, bounds);
+            }}
+            style={{
+              transform: `translate(${bounds.x}px, ${bounds.y}px)`,
             }}
           />
         </>

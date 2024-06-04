@@ -52,31 +52,31 @@ const porCasoDeUso: { title: string; href: string }[] = [
 const porEquipo: { title: string; href: string }[] = [
     {
         title: "Gestión de producto 🚧",
-        href: "https://www.sketchlie.com/gestion-producto/",
+        href: "https://www.sketchlie.com/gestion-producto",
     },
     {
         title: "Equipos de Ingeniería 🚧",
-        href: "https://www.sketchlie.com/equipos-de-ingenieria/",
+        href: "https://www.sketchlie.com/equipos-de-ingenieria",
     },
     {
-        title: "Diseño 🚧",
+        title: "Diseño",
         href: "https://www.sketchlie.com/diseno/",
     },
     {
         title: "Equipos de IT 🚧",
-        href: "https://www.sketchlie.com/equipos-de-it/",
+        href: "https://www.sketchlie.com/equipos-de-it",
     },
     {
         title: "Marketing 🚧",
-        href: "https://www.sketchlie.com/marketing/",
+        href: "https://www.sketchlie.com/marketing",
     },
     {
         title: "Agencias y Consultorías 🚧",
-        href: "https://www.sketchlie.com/agencias-consultorías/",
+        href: "https://www.sketchlie.com/agencias-consultorías",
     },
     {
         title: "Ventas 🚧",
-        href: "https://www.sketchlie.com/ventas/",
+        href: "https://www.sketchlie.com/ventas",
     },
 ]
 
@@ -108,6 +108,7 @@ const Sidebar = ({
                             <AccordionContent className="flex flex-col w-full gap-1">
                                 <SheetClose asChild>
                                     <Link
+                                        title="Descripcion de Sketchlie"
                                         href="/descripcion"
                                     >
                                         <Button
@@ -126,6 +127,7 @@ const Sidebar = ({
                                 {porCasoDeUso.map((component) => (
                                     <SheetClose asChild key={component.title}>
                                         <Link
+                                            title={component.title}
                                             href={component.href}
                                         >
                                             <Button
@@ -145,6 +147,7 @@ const Sidebar = ({
                                 {porEquipo.map((component) => (
                                     <SheetClose asChild key={component.title}>
                                         <Link
+                                            title={component.title}
                                             href={component.href}
                                         >
                                             <Button
@@ -163,6 +166,7 @@ const Sidebar = ({
                                 <Link
                                     className="my-2 text-lg hover:underline px-5"
                                     href="/blog/"
+                                    title="Blog"
                                 >
                                     <Button
                                         className='w-full justify-start gap-1 text-lg font-semibold'
@@ -173,15 +177,39 @@ const Sidebar = ({
                                 </Link>
                             </SheetClose>
                         </div>
+                        <div className="flex flex-col w-full border-b">
+                            <SheetClose asChild>
+                                <Link
+                                    className="my-2 text-lg hover:underline px-5"
+                                    href="/pricing/"
+                                    title="Precios"
+                                >
+                                    <Button
+                                        className='w-full justify-start gap-1 text-lg font-semibold'
+                                        variant={pathname === "/pricing/" ? 'auth' : 'ghost'}
+                                    >
+                                        Precios 
+                                    </Button>
+                                </Link>
+                            </SheetClose>
+                        </div>
                     </Accordion>
                 </div>
             </div>
-            <Link href="https://www.sketchlie.com/auth/register" className="text-center">
+            <Link href="/auth/login/" className="text-center">
+                <Button
+                    variant="outline"
+                    className="w-[90%]"
+                >
+                    Login
+                </Button>
+            </Link>
+            <Link href="/tablero/" className="text-center" title="ir a tablero">
                 <Button
                     variant="auth"
                     className="w-[90%]"
                 >
-                    ¿Necesitas Colaborar?
+                    Ir a tablero
                 </Button>
             </Link>
         </div>

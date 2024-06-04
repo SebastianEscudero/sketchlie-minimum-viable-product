@@ -46,9 +46,9 @@ export const BlogStructure = ({
                     {description}
                 </p>
                 <div>
-                    <Link href={"/tablero/"}>
+                    <Link href={"/tablero/"} title="Ir a tablero">
                         <Button variant="auth" className="p-6 text-lg w-full md:w-auto">
-                            Ir a mi pizarra
+                            Ir a tablero
                         </Button>
                     </Link>
                 </div>

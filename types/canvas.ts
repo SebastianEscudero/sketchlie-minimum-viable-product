@@ -13,6 +13,16 @@ export type Camera = {
 export enum LayerType {
   Rectangle,
   Ellipse,
+  Rhombus,
+  Triangle,
+  Star,
+  Hexagon,
+  BigArrowDown,
+  BigArrowUp,
+  BigArrowLeft,
+  BigArrowRight,
+  CommentBubble,
+  Line,
   Path,
   Text,
   Note,
@@ -40,6 +50,8 @@ export type RectangleLayer = {
   width: number;
   fill: Color;
   outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
 };
 
 export type EllipseLayer = {
@@ -50,6 +62,126 @@ export type EllipseLayer = {
   width: number;
   fill: Color;
   outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type RhombusLayer = {
+  type: LayerType.Rhombus;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type TriangleLayer = {
+  type: LayerType.Triangle;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type StarLayer = {
+  type: LayerType.Star;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type HexagonLayer = {
+  type: LayerType.Hexagon;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type BigArrowLeftLayer = {
+  type: LayerType.BigArrowLeft;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type BigArrowRightLayer = {
+  type: LayerType.BigArrowRight;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type BigArrowDownLayer = {
+  type: LayerType.BigArrowDown;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type BigArrowUpLayer = {
+  type: LayerType.BigArrowUp;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type CommentBubbleLayer = {
+  type: LayerType.CommentBubble;
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  fill: Color;
+  outlineFill: Color | null;
+  textFontSize: number;
+  value?: string;
+};
+
+export type LineLayer = {
+  type: LayerType.Line;
+  x: number;
+  y: number;
+  center?: Point;
+  height: number;
+  width: number;
+  fill: Color;
 };
 
 export type PathLayer = {
@@ -96,6 +228,7 @@ export type NoteLayer = {
   textFontSize: number;
 };
 
+
 export type Point = {
   x: number;
   y: number;
@@ -119,7 +252,7 @@ export enum ArrowHandle {
   start,
   center,
   end
-}
+};
 
 export type CanvasState =
   | {
@@ -135,28 +268,37 @@ export type CanvasState =
     current: Point;
   }
   | {
-    mode: CanvasMode.Eraser,
-  }
-  | {
     mode: CanvasMode.Inserting,
-    layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note | LayerType.Image | LayerType.Path | LayerType.Arrow;
+    layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Rhombus | LayerType.Triangle 
+    | LayerType.Star | LayerType.Hexagon | LayerType.BigArrowDown | LayerType.BigArrowUp  | LayerType.Line
+    | LayerType.BigArrowLeft | LayerType.BigArrowRight | LayerType.Text | LayerType.Note 
+    | LayerType.CommentBubble | LayerType.Image | LayerType.Path | LayerType.Arrow;
   }
   | {
     mode: CanvasMode.Pencil,
+  }
+  | {
+    mode: CanvasMode.Laser,
+  }
+  | {
+    mode: CanvasMode.Highlighter,
+  }
+  | {
+    mode: CanvasMode.Eraser,
   }
   | {
     mode: CanvasMode.Pressing,
     origin: Point;
   }
   | {
-    mode: CanvasMode.Resizing,
-    initialBounds: XYWH;
-    corner: Side;
-  }
-  | {
     mode: CanvasMode.ArrowResizeHandler,
     initialBounds: XYWH;
     handle: ArrowHandle;
+  }
+  | {
+    mode: CanvasMode.Resizing,
+    initialBounds: XYWH;
+    corner: Side;
   }
   | {
     mode: CanvasMode.Moving,
@@ -171,19 +313,48 @@ export enum CanvasMode {
   Resizing,
   ArrowResizeHandler,
   Pencil,
+  Laser,
+  Highlighter,
   Eraser,
   Moving
 };
 
-export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | NoteLayer | ImageLayer | ArrowLayer;
+export type Layer = RectangleLayer | EllipseLayer | RhombusLayer | TriangleLayer | StarLayer 
+| HexagonLayer | BigArrowDownLayer | BigArrowLeftLayer | BigArrowRightLayer | BigArrowUpLayer | PathLayer 
+| CommentBubbleLayer |TextLayer | NoteLayer | ImageLayer | ArrowLayer | LineLayer;
 
 export interface Layers {
   [key: string]: Layer;
 }
+
+export type Presence = {
+  cursor?: { x: number, y: number } | null,
+  selection?: string[];
+  pencilDraft?: [x: number, y: number, pressure: number][] | null;
+  pathStrokeColor?: Color;
+  pathStrokeSize?: number;
+};
+
+export type User = {
+  userId: string;
+  presence: Presence | null;
+  information: {
+      name?: string;
+      picture?: string;
+    };
+};
+
+export type UpdateLayerMutation = (args: {
+  board: any;
+  layerId: string;
+  layerUpdates: Record<string, unknown>;
+}) => Promise<any>;
 
 export enum ArrowHead {
   None = "None",
   Triangle = "Triangle",
 }
 
-export type PreviewLayer = RectangleLayer | EllipseLayer | TextLayer | NoteLayer | ArrowLayer;
+export type PreviewLayer = RectangleLayer | EllipseLayer | RhombusLayer | 
+TriangleLayer | StarLayer | HexagonLayer | BigArrowDownLayer | BigArrowLeftLayer | LineLayer
+| BigArrowRightLayer | BigArrowUpLayer | CommentBubbleLayer | TextLayer | NoteLayer | ArrowLayer;

@@ -11,7 +11,7 @@ import { FontSizePicker } from "./font-picker";
 import { OutlineColorPicker } from "./outline-color-picker";
 import { ArrowHeadSelection } from "./arrow-head-selection";
 import { PathStokeSizeSelection } from "./stroke-size-selection";
-import { nanoid } from "nanoid";
+import { customAlphabet } from "nanoid";
 
 interface SelectionToolsProps {
   camera: Camera;
@@ -38,25 +38,51 @@ export const SelectionTools = memo(({
   InsertLayerCommand,
   performAction,
 }: SelectionToolsProps) => {
+  const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const nanoid = customAlphabet(alphabet, 21);
 
-  const isTextOrNoteLayer = selectedLayers.every(layer =>
-    liveLayers[layer]?.type === LayerType.Text || liveLayers[layer]?.type === LayerType.Note
+  const hasText = selectedLayers.every(layer =>
+    liveLayers[layer]?.type === LayerType.Text ||
+    liveLayers[layer]?.type === LayerType.Note ||
+    liveLayers[layer]?.type === LayerType.Rectangle ||
+    liveLayers[layer]?.type === LayerType.Ellipse ||
+    liveLayers[layer]?.type === LayerType.Rhombus ||
+    liveLayers[layer]?.type === LayerType.Triangle ||
+    liveLayers[layer]?.type === LayerType.Star ||
+    liveLayers[layer]?.type === LayerType.Hexagon ||
+    liveLayers[layer]?.type === LayerType.BigArrowLeft ||
+    liveLayers[layer]?.type === LayerType.BigArrowRight ||
+    liveLayers[layer]?.type === LayerType.BigArrowUp ||
+    liveLayers[layer]?.type === LayerType.BigArrowDown ||
+    liveLayers[layer]?.type === LayerType.CommentBubble
   );
 
-  const isRectangleOrEllipseOrNoteLayer = selectedLayers.every(layer =>
-    liveLayers[layer]?.type === LayerType.Rectangle || liveLayers[layer]?.type === LayerType.Ellipse || liveLayers[layer]?.type === LayerType.Note
+  const hasOutline = selectedLayers.every(layer =>
+    liveLayers[layer]?.type === LayerType.Note ||
+    liveLayers[layer]?.type === LayerType.Rectangle ||
+    liveLayers[layer]?.type === LayerType.Ellipse ||
+    liveLayers[layer]?.type === LayerType.Rhombus ||
+    liveLayers[layer]?.type === LayerType.Triangle ||
+    liveLayers[layer]?.type === LayerType.Star ||
+    liveLayers[layer]?.type === LayerType.Hexagon ||
+    liveLayers[layer]?.type === LayerType.BigArrowLeft ||
+    liveLayers[layer]?.type === LayerType.BigArrowRight ||
+    liveLayers[layer]?.type === LayerType.BigArrowUp ||
+    liveLayers[layer]?.type === LayerType.BigArrowDown ||
+    liveLayers[layer]?.type === LayerType.CommentBubble
   );
   const isArrowLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Arrow);
+  const isLineLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Line);
   const isPathLayer = selectedLayers.every(layer => liveLayers[layer]?.type === LayerType.Path);
+
   const layers = selectedLayers.map(id => liveLayers[id]);
   const [initialPosition, setInitialPosition] = useState<{ x: number, y: number } | null>(null);
   const selectionBounds = useSelectionBounds(selectedLayers, liveLayers);
 
-
   useEffect(() => {
     if (selectionBounds) {
       let x, y;
-      if (isArrowLayer) {
+      if (isArrowLayer || isLineLayer) {
         const arrowLayer = liveLayers[selectedLayers[0]];
         const centerY = arrowLayer.center.y
         const startY = arrowLayer.y
@@ -69,7 +95,7 @@ export const SelectionTools = memo(({
       }
       setInitialPosition({ x, y });
     }
-  }, [selectedLayers, camera, zoom]);
+  }, [selectedLayers, zoom, camera, liveLayers]);
 
   const moveToFront = useCallback(() => {
     const indices: number[] = [];
@@ -132,17 +158,21 @@ export const SelectionTools = memo(({
   const setFill = useCallback((fill: Color) => {
     setLiveLayers((prevLayers: any) => {
       const newLayers = { ...prevLayers };
+      const updatedIds: any = [];
+      const updatedLayers: any = [];
 
       selectedLayers.forEach((id) => {
         const layer = newLayers[id];
         if (layer) {
           newLayers[id].fill = fill;
+          updatedIds.push(id);
+          updatedLayers.push(newLayers[id]);
         }
       });
-
       localStorage.setItem("layers", JSON.stringify(newLayers));
       return newLayers;
     });
+
   }, [selectedLayers, setLiveLayers]);
 
   const setOutlineFill = useCallback((outlineFill: Color) => {
@@ -165,67 +195,67 @@ export const SelectionTools = memo(({
     });
   }, [selectedLayers, setLiveLayers]);
 
-  const duplicateLayers = useCallback(() => {
+  const duplicateLayers = useCallback(() => {  
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
     selectedLayers.forEach((id) => {
-        const layer = liveLayers[id];
-        minX = Math.min(minX, layer.x);
-        minY = Math.min(minY, layer.y);
-        maxX = Math.max(maxX, layer.x + layer.width);
-        maxY = Math.max(maxY, layer.y + layer.height);
+      const layer = liveLayers[id];
+      minX = Math.min(minX, layer.x);
+      minY = Math.min(minY, layer.y);
+      maxX = Math.max(maxX, layer.x + layer.width);
+      maxY = Math.max(maxY, layer.y + layer.height);
     });
-
-    const offsetX = 10; // Offset to move the duplicated layers
-    const offsetY = 10;
-
-    const newSelection = [];
+  
+    const offsetX = maxX - minX + 10; // Offset by 10 units for visibility
+  
+    const newSelection = [] as string[];
     const newLiveLayers = { ...liveLayers };
     const newLiveLayerIds = [...liveLayerIds];
+    const newIds: any = [];
+    const clonedLayers: any = [];
     selectedLayers.forEach((id) => {
-        const newId = nanoid();
-        newSelection.push(newId);
-        newLiveLayerIds.push(newId);
-        const clonedLayer = JSON.parse(JSON.stringify(liveLayers[id]));
-        clonedLayer.x = clonedLayer.x + offsetX;
-        clonedLayer.y = clonedLayer.y + offsetY;
-        if (clonedLayer.type === LayerType.Arrow) {
-            clonedLayer.center.x += offsetX;
-            clonedLayer.center.y += offsetY;
-        }
-        newLiveLayers[newId] = clonedLayer;
+      const layer = liveLayers[id];
+      const newId = nanoid();
+      newSelection.push(newId);
+      newLiveLayerIds.push(newId);
+      const clonedLayer = JSON.parse(JSON.stringify(layer));
+      clonedLayer.x = clonedLayer.x + offsetX;
+      if (clonedLayer.type === LayerType.Arrow || clonedLayer.type === LayerType.Line) {
+        clonedLayer.center.x += offsetX;
+      }
+      newLiveLayers[newId] = clonedLayer;
+      newIds.push(newId);
+      clonedLayers.push(clonedLayer);
     });
-
-    const command = new InsertLayerCommand(newLiveLayerIds, newLiveLayerIds, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds);
+  
+    const command = new InsertLayerCommand(newIds, clonedLayers, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds);
     performAction(command);
-
     setLiveLayers(newLiveLayers);
     setLiveLayerIds(newLiveLayerIds);
-    localStorage.setItem("layers", JSON.stringify(newLiveLayers));
-    localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
-}, [selectedLayers, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds, performAction, InsertLayerCommand]);
+  }, [selectedLayers, setLiveLayers, setLiveLayerIds, liveLayerIds, liveLayers]);
 
-  const deleteLayers = useCallback(() => {  
-    const layersToDelete: { [key: string]: any } = {};
-    selectedLayers.forEach(id => {
+const deleteLayers = useCallback(() => {
+  let newLiveLayers = { ...liveLayers };
+  let newLiveLayerIds = liveLayerIds.filter(id => !selectedLayers.includes(id));
+
+  // Create an object mapping layer IDs to layer objects
+  const layersToDelete: { [key: string]: any } = {};
+  selectedLayers.forEach(id => {
       layersToDelete[id] = liveLayers[id];
-    });
+  });
 
-    const command = new DeleteLayerCommand(selectedLayers, layersToDelete, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds);
-    performAction(command);
+  const command = new DeleteLayerCommand(selectedLayers, layersToDelete, liveLayers, liveLayerIds, setLiveLayers, setLiveLayerIds);
+  performAction(command);
 
-    const newLiveLayers = { ...liveLayers };
-    const newLiveLayerIds = [...liveLayerIds.filter((id) => !selectedLayers.includes(id))];
+  selectedLayers.forEach((id) => {
+    delete newLiveLayers[id];
+  });
 
-    setLiveLayers(newLiveLayers);
-    setLiveLayerIds(newLiveLayerIds);
-    
-    localStorage.setItem("layers", JSON.stringify(newLiveLayers));
-    localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
-    selectedLayers.length = 0
-  }, [selectedLayers, liveLayers, setLiveLayers, liveLayerIds, setLiveLayerIds, performAction, DeleteLayerCommand]);
+  setLiveLayers(newLiveLayers);
+  setLiveLayerIds(newLiveLayerIds);
+}, [liveLayers, liveLayerIds, selectedLayers, setLiveLayers, setLiveLayerIds, performAction, DeleteLayerCommand]);
 
   if (!selectionBounds) {
     return null;
@@ -260,23 +290,23 @@ export const SelectionTools = memo(({
           liveLayers={liveLayers}
         />
       )}
-      {isTextOrNoteLayer && (
+      {hasText && (
         <FontSizePicker
           selectedLayers={selectedLayers}
           setLiveLayers={setLiveLayers}
           liveLayers={liveLayers}
         />
       )}
-      {isRectangleOrEllipseOrNoteLayer && (
+      {hasOutline && (
         <OutlineColorPicker
           layers={layers}
           onChange={setOutlineFill}
         />
       )}
-      <ColorPicker
-        layers={layers}
-        onChange={setFill}
-      />
+        <ColorPicker
+          layers={layers}
+          onChange={setFill}
+        />
       <Hint label="Duplicate">
         <Button
           onClick={duplicateLayers}

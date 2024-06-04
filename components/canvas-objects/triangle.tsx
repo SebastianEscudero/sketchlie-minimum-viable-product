@@ -1,7 +1,7 @@
 import { Kalam } from "next/font/google";
 import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
-import { LayerType, RectangleLayer } from "@/types/canvas";
+import { LayerType, TriangleLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,27 +10,27 @@ const font = Kalam({
   weight: ["400"],
 });
 
-interface RectangleProps {
+interface TriangleProps {
   id: string;
-  layer: RectangleLayer;
+  layer: TriangleLayer;
   onPointerDown?: (e: any, id: string) => void;
   selectionColor?: string;
   onRefChange?: (ref: React.RefObject<any>) => void;
   setLiveLayers?: (layers: any) => void;
 };
 
-export const Rectangle = ({
+export const Triangle = ({
   layer,
   onPointerDown,
   id,
   selectionColor,
   onRefChange,
   setLiveLayers
-}: RectangleProps) => {
+}: TriangleProps) => {
   const { x, y, width, height, fill, outlineFill, value: initialValue, textFontSize } = layer;
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
-  const RectangleRef = useRef<any>(null);
+  const TriangleRef = useRef<any>(null);
   const storedLayers = localStorage.getItem('layers');
   const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
@@ -41,11 +41,11 @@ export const Rectangle = ({
   }, [id]);
   
   const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.Rectangle) {
-      const noteLayer = liveLayers[id] as RectangleLayer;
-      noteLayer.value = newValue;
+    if (liveLayers[id] && liveLayers[id].type === LayerType.Triangle) {
+      const TriangleLayer = liveLayers[id] as TriangleLayer;
+      TriangleLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: noteLayer };
+      const newLiveLayers = { ...liveLayers, [id]: TriangleLayer };
       if (setLiveLayers) {
         setLiveLayers(newLiveLayers);
       }
@@ -78,7 +78,7 @@ export const Rectangle = ({
     e.preventDefault();
     if (onPointerDown) onPointerDown(e, id);
     if (onRefChange) {
-      onRefChange(RectangleRef);
+      onRefChange(TriangleRef);
     }
   };
 
@@ -91,7 +91,7 @@ export const Rectangle = ({
       onPointerDown(e, id);
     }
     if (onRefChange) {
-      onRefChange(RectangleRef);
+      onRefChange(TriangleRef);
     }
   }
 
@@ -112,7 +112,7 @@ export const Rectangle = ({
 
   useEffect(() => {
     if (onRefChange) {
-      onRefChange(RectangleRef);
+      onRefChange(TriangleRef);
     }
   }, [layer]);
 
@@ -121,44 +121,49 @@ export const Rectangle = ({
   }
 
   return (
-    <foreignObject
-      x={x}
-      y={y}
-      width={width}
-      height={height}
+    <g
+      transform={`translate(${x}, ${y})`}
       onPointerMove={(e) => {
         if (e.buttons === 1) {
             handlePointerDown(e);
         }
-    }}
-      strokeWidth={2}
+      }}
       onPointerDown={(e) => handlePointerDown(e)}
       onTouchStart={(e) => handleOnTouchDown(e)}
-      style={{
-        borderColor: `${selectionColor || colorToCss(outlineFill || fill)}`,
-        backgroundColor: fillColor,
-      }}
-      className="flex items-center justify-center border-[2px] border-spacing-3 rounded-sm"
     >
-      <ContentEditable
-        innerRef={RectangleRef}
-        onKeyDown={handleKeyDown}
-        html={value || ""}
-        onChange={handleContentChange}
-        onPaste={handlePaste}
-        className={cn(
-          "h-full w-full flex items-center justify-center text-center outline-none",
-          font.className
-        )}
-        style={{
-          fontSize: textFontSize,
-          color: fill ? getContrastingTextColor(fill) : "#000",
-          textWrap: "wrap",
-          lineHeight: value ? 'normal' : `${height}px`,
-          WebkitUserSelect: 'auto'
-        }}
-        spellCheck={false}
+      <polygon
+        points={`${width/2},0 ${width},${height} 0,${height}`}
+        fill={fillColor}
+        stroke={selectionColor || colorToCss(outlineFill || fill)}
+        strokeWidth="2"
       />
-    </foreignObject>
+      <foreignObject
+        x="0"
+        y="0"
+        width={width}
+        height={height}
+        className="flex items-center justify-center"
+      >
+           <ContentEditable
+          innerRef={TriangleRef}
+          onKeyDown={handleKeyDown}
+          html={value || ""}
+          onChange={handleContentChange}
+          onPaste={handlePaste}
+          className={cn(
+            "h-full w-full flex items-center justify-center text-center outline-none",
+            font.className
+          )}
+          style={{
+            fontSize: textFontSize,
+            color: fill ? getContrastingTextColor(fill) : "#000",
+            textWrap: "wrap",
+            lineHeight: value ? 'normal' : `${height}px`,
+            WebkitUserSelect: 'auto'
+          }}
+          spellCheck={false}
+        />
+      </foreignObject>
+    </g>
   );
 };

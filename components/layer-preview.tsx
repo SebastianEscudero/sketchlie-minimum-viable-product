@@ -3,13 +3,22 @@
 import { memo } from "react";
 import { colorToCss } from "@/lib/utils";
 import { LayerType } from "@/types/canvas";
-import { Text } from "@/components/canvas-objects/text";
-import { Ellipse } from "@/components/canvas-objects/ellipse";
-import { Rectangle } from "@/components/canvas-objects/rectangle";
-import { Note } from "@/components/canvas-objects/note";
-import { Path } from "@/components/canvas-objects/path";
-import { InsertImage } from "./canvas-objects/image";
+import { Path } from "./canvas-objects/path";
+import { Note } from "./canvas-objects/note";
+import { Text } from "./canvas-objects/text";
+import { Ellipse } from "./canvas-objects/ellipse";
+import { Rectangle } from "./canvas-objects/rectangle";
 import { Arrow } from "./canvas-objects/arrow";
+import { Rhombus } from "./canvas-objects/rhombus";
+import { Triangle } from "./canvas-objects/triangle";
+import { Star } from "./canvas-objects/star";
+import { Hexagon } from "./canvas-objects/hexagon";
+import { CommentBubble } from "./canvas-objects/commentBubble";
+import { Line } from "./canvas-objects/line";
+import { BigArrowLeft } from "./canvas-objects/bigArrowLeft";
+import { BigArrowRight } from "./canvas-objects/bigArrowRight";
+import { BigArrowUp } from "./canvas-objects/bigArrowUp";
+import { BigArrowDown } from "./canvas-objects/bigArrowDown";
 
 interface LayerPreviewProps {
   id: string;
@@ -30,11 +39,11 @@ export const LayerPreview = memo(({
   liveLayers,
   setLiveLayers,
   onRefChange,
-  zoomRef,
+  zoomRef
 }: LayerPreviewProps) => {
-  
+
   const layer = liveLayers[id];
-  
+
   if (!layer) {
     return null;
   }
@@ -62,6 +71,8 @@ export const LayerPreview = memo(({
           layer={layer}
           onPointerDown={onLayerPointerDown}
           selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
         />
       );
     case LayerType.Text:
@@ -82,6 +93,8 @@ export const LayerPreview = memo(({
           layer={layer}
           onPointerDown={onLayerPointerDown}
           selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
         />
       );
     case LayerType.Rectangle:
@@ -91,28 +104,128 @@ export const LayerPreview = memo(({
           layer={layer}
           onPointerDown={onLayerPointerDown}
           selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
         />
       );
-      case LayerType.Image:
+    case LayerType.Rhombus:
+      return (
+        <Rhombus
+          id={id}
+          layer={layer}
+          onPointerDown={onLayerPointerDown}
+          selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
+        />
+      );
+    case LayerType.Triangle:
+      return (
+        <Triangle
+          id={id}
+          layer={layer}
+          onPointerDown={onLayerPointerDown}
+          selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
+        />
+      );
+    case LayerType.Star:
+      return (
+        <Star
+          id={id}
+          layer={layer}
+          onPointerDown={onLayerPointerDown}
+          selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
+        />
+      );
+    case LayerType.Hexagon:
+      return (
+        <Hexagon
+          id={id}
+          layer={layer}
+          onPointerDown={onLayerPointerDown}
+          selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
+        />
+      );
+      case LayerType.CommentBubble:
         return (
-          <InsertImage
-            isUploading={false}
+          <CommentBubble
+            id={id}
+            layer={layer}
+            onPointerDown={onLayerPointerDown}
+            selectionColor={selectionColor}
+            onRefChange={onRefChange}
+            setLiveLayers={setLiveLayers}
+          />
+      );
+      case LayerType.Line:
+        return (
+          <Line
             id={id}
             layer={layer}
             onPointerDown={onLayerPointerDown}
             selectionColor={selectionColor}
           />
-        );
-      case LayerType.Arrow:
+      );
+    case LayerType.BigArrowLeft:
+      return (
+        <BigArrowLeft
+          id={id}
+          layer={layer}
+          onPointerDown={onLayerPointerDown}
+          selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
+        />
+      );
+    case LayerType.BigArrowRight:
+      return (
+        <BigArrowRight
+          id={id}
+          layer={layer}
+          onPointerDown={onLayerPointerDown}
+          selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
+        />
+      );
+    case LayerType.BigArrowUp:
+      return (
+        <BigArrowUp
+          id={id}
+          layer={layer}
+          onPointerDown={onLayerPointerDown}
+          selectionColor={selectionColor}
+          onRefChange={onRefChange}
+          setLiveLayers={setLiveLayers}
+        />
+      );
+      case LayerType.BigArrowDown:
         return (
-          <Arrow
+          <BigArrowDown
             id={id}
             layer={layer}
             onPointerDown={onLayerPointerDown}
             selectionColor={selectionColor}
+            onRefChange={onRefChange}
+            setLiveLayers={setLiveLayers}
           />
         );
-      default:
+    case LayerType.Arrow:
+      return (
+        <Arrow
+          id={id}
+          layer={layer}
+          onPointerDown={onLayerPointerDown}
+          selectionColor={selectionColor}
+        />
+      );
+    default:
       return null;
   }
 });

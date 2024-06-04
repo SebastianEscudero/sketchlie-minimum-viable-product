@@ -15,31 +15,31 @@ import { FaFacebook, FaInstagram, FaLinkedin, FaTwitter } from "react-icons/fa";
 const porEquipo: { title: string; href: string }[] = [
     {
         title: "Gestión de producto 🚧",
-        href: "https://www.sketchlie.com/gestion-producto",
+        href: "https://www.sketchlie.com/gestion-producto/",
     },
     {
         title: "Equipos de Ingeniería 🚧",
-        href: "https://www.sketchlie.com/equipos-de-ingenieria",
+        href: "https://www.sketchlie.com/equipos-de-ingenieria/",
     },
     {
-        title: "Diseño 🚧",
-        href: "https://www.sketchlie.com/diseno",
+        title: "Diseño",
+        href: "https://www.sketchlie.com/diseno/",
     },
     {
         title: "Equipos de IT 🚧",
-        href: "https://www.sketchlie.com/equipos-de-it",
+        href: "https://www.sketchlie.com/equipos-de-it/",
     },
     {
         title: "Marketing 🚧",
-        href: "https://www.sketchlie.com/marketing",
+        href: "https://www.sketchlie.com/marketing/",
     },
     {
         title: "Agencias y Consultorías 🚧",
-        href: "https://www.sketchlie.com/agencias-consultorías",
+        href: "https://www.sketchlie.com/agencias-consultorías/",
     },
     {
         title: "Ventas 🚧",
-        href: "https://www.sketchlie.com/ventas",
+        href: "https://www.sketchlie.com/ventas/",
     },
 ]
 
@@ -66,7 +66,7 @@ const porCasoDeUso: { title: string; href: string }[] = [
     },
     {
         title: "Mapa de procesos",
-        href: "https://www.sketchlie.com/mapas-de-procesos",
+        href: "https://www.sketchlie.com/mapas-de-procesos/",
     },
     {
         title: "Diagramas",
@@ -168,7 +168,7 @@ export const BotNavbar = () => {
                     <p className="mx-[10%]">
                         Sé parte de la comunidad que impulsa la innovación y la colaboración con Sketchlie. Regístrate ahora con tu correo electrónico laboral y comienza a transformar tus ideas en realidad.
                     </p>
-                    <Link href={"/tablero/"}>
+                    <Link href={"/tablero/"} title="Crear tablero gratis">
                         <Button variant="auth" className="text-lg p-6 mt-10">
                             Crear tablero gratis
                         </Button>
@@ -179,25 +179,25 @@ export const BotNavbar = () => {
                 <nav className="flex flex-col">
                     <h6 className="font-bold mb-2">Soluciones</h6>
                     {porCasoDeUso.map((component, index) => (
-                        <Link key={index} href={component.href}><Button variant={pathname === component.href ? 'secondary' : 'ghostDark'} className="my-1 text-lg">{component.title}</Button></Link>
+                        <Link key={index} href={component.href} title={component.title}><Button variant={pathname === component.href ? 'secondary' : 'ghostDark'} className="my-1 text-lg">{component.title}</Button></Link>
                     ))}
                 </nav>
                 <nav className="flex flex-col">
                     <h6 className="font-bold mb-2">Equipos</h6>
                     {porEquipo.map((component, index) => (
-                        <Link key={index} href={component.href}><Button variant={pathname === component.href ? 'secondary' : 'ghostDark'} className="my-1 text-lg">{component.title}</Button></Link>
+                        <Link key={index} href={component.href} title={component.title}><Button variant={pathname === component.href ? 'secondary' : 'ghostDark'} className="my-1 text-lg">{component.title}</Button></Link>
                     ))}
                 </nav>
                 <nav className="flex flex-col">
                     <h6 className="font-bold mb-2">Blogs</h6>
                     {blog.map((component, index) => (
-                        <Link key={index} href={component.href}><Button variant={pathname === component.href ? 'secondary' : 'ghostDark'} className="my-1 text-lg">{component.title}</Button></Link>
+                        <Link key={index} href={component.href} title={component.title}><Button variant={pathname === component.href ? 'secondary' : 'ghostDark'} className="my-1 text-lg">{component.title}</Button></Link>
                     ))}
                 </nav>
                 <nav className="flex flex-col">
                     <h6 className="font-bold mb-2">Contenido Informativo</h6>
                     {queEs.map((component, index) => (
-                        <Link key={index} href={component.href}><Button variant={pathname === component.href ? 'secondary' : 'ghostDark'} className="my-1 text-lg">¿Qué es un {component.title}</Button></Link>
+                        <Link key={index} href={component.href} title={component.title}><Button variant={pathname === component.href ? 'secondary' : 'ghostDark'} className="my-1 text-lg">¿Qué es un {component.title}</Button></Link>
                     ))}
                 </nav>
             </div>
@@ -223,7 +223,7 @@ export const BotNavbar = () => {
                         {porCasoDeUso.map((component) => (
                             <Link
                                 key={component.title}
-                                href={component.href}
+                                href={component.href} title={component.title}
                             >
                                 <Button
                                     className='w-full justify-start my-[2px] text-[16px]'
@@ -239,24 +239,25 @@ export const BotNavbar = () => {
                     <AccordionTrigger className="font-semibold">Equipos</AccordionTrigger>
                     <AccordionContent className="flex flex-col w-full gap-1">
                         {porEquipo.map((component) => (
-                                <Link
-                                    key={component.title}
-                                    href={component.href}
+                            <Link
+                                key={component.title}
+                                href={component.href} title={component.title}
+                            >
+                                <Button
+                                    className='w-full justify-start my-[2px] text-[16px]'
+                                    variant={pathname === component.href ? 'secondary' : 'ghostDark'}
                                 >
-                                    <Button
-                                        className='w-full justify-start my-[2px] text-[16px]'
-                                        variant={pathname === component.href ? 'secondary' : 'ghostDark'}
-                                    >
-                                        {component.title}
-                                    </Button>
-                                </Link>
+                                    {component.title}
+                                </Button>
+                            </Link>
                         ))}
                     </AccordionContent>
                 </AccordionItem>
                 <div className="flex flex-col w-full border-b">
                     <Link
+                        title="Blog"
                         className="py-[9.5px] text-lg hover:underline ml-5"
-                        href="/blog/"
+                        href="https://www.sketchlie.com/blog/"
                     >
                         <Button
                             className='w-full justify-start gap-1 text-lg font-semibold'
@@ -268,22 +269,24 @@ export const BotNavbar = () => {
                 </div>
                 <div className="flex flex-col w-full border-b">
                     <Link
+                        title="Precios"
                         className="py-[9.5px] text-lg hover:underline ml-5"
-                        href="/pricing/"
+                        href="https://www.sketchlie.com/pricing/"
                     >
                         <Button
                             className='w-full justify-start gap-1 text-lg font-semibold'
                             variant={pathname === "/pricing/" ? 'secondary' : 'ghostDark'}
                         >
-                            Precios  🚧
+                            Precios
                         </Button>
                     </Link>
                 </div>
             </Accordion>
             <div className="lg:text-lg text-lg mt-10 px-4 flex justify-center flex-col pb-10">
                 <Link
-                    href="/dashboard/"
+                    href="/tablero/"
                     className="flex justify-center"
+                    title="Sketchlie"
                 >
                     <Image
                         src="/logo.svg"
@@ -296,16 +299,16 @@ export const BotNavbar = () => {
                     </p>
                 </Link>
                 <div className="flex items-center flex-row justify-center space-x-4 mt-4">
-                    <Link href="https://www.facebook.com/people/Sketchlie/61558420300592/" target="_blank" aria-label="Sketchlie on Facebook">
+                    <Link href="https://www.facebook.com/people/Sketchlie/61558420300592/" target="_blank" aria-label="Sketchlie on Facebook" title="Sketchlie on Facebook">
                         <FaFacebook className="text-2xl ml-2" />
                     </Link>
-                    <Link href="https://twitter.com/sketchlieteam" target="_blank" aria-label="Sketchlie on Twitter">
+                    <Link href="https://twitter.com/sketchlieteam" target="_blank" aria-label="Sketchlie on Twitter" title="Sketchlie on Twitter">
                         <FaTwitter className="text-2xl ml-2" />
                     </Link>
-                    <Link href="https://www.linkedin.com/company/sketchlie" target="_blank" aria-label="Sketchlie on LinkedIn">
+                    <Link href="https://www.linkedin.com/company/sketchlie" target="_blank" aria-label="Sketchlie on LinkedIn" title="Sketchlie on LinkedIn">
                         <FaLinkedin className="text-2xl ml-2" />
                     </Link>
-                    <Link href="http://www.instagram.com/sketchlieux" target="_blank" aria-label="Sketchlie on Instagram">
+                    <Link href="http://www.instagram.com/sketchlieux" target="_blank" aria-label="Sketchlie on Instagram" title="Sketchlie on Instagram">
                         <FaInstagram className="text-2xl ml-2" />
                     </Link>
                 </div>
