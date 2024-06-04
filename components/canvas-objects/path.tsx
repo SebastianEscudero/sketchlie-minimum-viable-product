@@ -1,6 +1,4 @@
-import getStroke from "perfect-freehand";
-
-import { getSvgPathFromStroke } from "@/lib/utils";
+import { getSvgPathFromPoints } from "@/lib/utils";
 
 interface PathProps {
     x: number;
@@ -32,21 +30,17 @@ export const Path = ({
         <path
             onPointerMove={onPathErase}
             onPointerDown={onPointerDown}
-            d={getSvgPathFromStroke(
-                getStroke(points, {
-                    size: strokeSize || 4,
-                    smoothing: 0.4,
-                    streamline: 0.4,
-                })
-            )}
+            d={getSvgPathFromPoints(points)}
             style={{
                 transform: `translate(${x}px, ${y}px)`,
                 pointerEvents: "all"
             }}
             x={0}
             y={0}
-            fill={isTransparent ? '#000' : fill}
-            stroke={stroke}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            stroke={stroke ?? (isTransparent ? 'black' : fill)}
             strokeWidth={strokeSize ?? 1 / (zoomRef?.current ?? 1)**2}
             />
     );

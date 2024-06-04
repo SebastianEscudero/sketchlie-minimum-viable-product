@@ -243,7 +243,7 @@ export const Canvas = () => {
         let layer;
         let fillColor = { r: 0, g: 0, b: 0, a: 0 }
         if (layerType === LayerType.Note) {
-            if (width < 20 && height < 20) {
+            if (width < 10 && height < 10) {
                 width = 80
                 height = 80
             }
@@ -301,7 +301,7 @@ export const Canvas = () => {
                 fill: fillColor,
             };
         } else {
-            if (width < 20 && height < 20) {
+            if (width < 10 && height < 10) {
                 width = 80
                 height = 80
             }
@@ -572,7 +572,7 @@ export const Canvas = () => {
             // Zooming
             let newZoom = zoom;
             if (e.deltaY < 0) {
-                newZoom = Math.min(zoom * 1.1, 3.5);
+                newZoom = Math.min(zoom * 1.1, 10);
             } else {
                 newZoom = Math.max(zoom / 1.1, 0.3);
             }
@@ -1051,7 +1051,7 @@ export const Canvas = () => {
         if (distChange > 10) { // Zooming
             let newZoom = zoom;
             if (dist > pinchStartDist) {
-                newZoom = Math.min(zoom * 1.1, 3.5);
+                newZoom = Math.min(zoom * 1.1, 10);
             } else {
                 newZoom = Math.max(zoom / 1.1, 0.3);
             }
@@ -1404,7 +1404,7 @@ export const Canvas = () => {
                             style={{
                                 fill: 'rgba(59, 130, 246, 0.3)',
                                 stroke: '#3B82F6',
-                                strokeWidth: 0.5
+                                strokeWidth: 1/zoom
                             }}
                             x={Math.min(canvasState.origin.x, canvasState.current.x)}
                             y={Math.min(canvasState.origin.y, canvasState.current.y)}
