@@ -322,27 +322,15 @@ export function getSvgPathFromStroke(stroke: number[][]) {
 
 export const NAME = "Sketchlie";
 
-export const exportToPNG = async (title: string) => {
+export const exportToPNG = async () => {
   const screenShot = document.getElementById("canvas") as HTMLElement;
-  
-  // Save the current background color and image
-  const originalBackgroundColor = screenShot.style.backgroundColor;
-  const originalBackgroundImage = screenShot.style.backgroundImage;
-
-  // Set the background color and image
   screenShot.style.backgroundColor = '#F4F4F4';
-
-  // Now that the image is loaded, take the screenshot
   toPng(screenShot, { quality: 1 }).then((dataUrl) => {
     var anchor = document.createElement("a");
     anchor.setAttribute("href", dataUrl);
-    anchor.setAttribute("download", `${title}.png`);
+    anchor.setAttribute("download", `Tablero.png`);
     anchor.click();
     anchor.remove();
-
-    // Restore the original background color and image
-    screenShot.style.backgroundColor = originalBackgroundColor;
-    screenShot.style.backgroundImage = originalBackgroundImage;
   })
 };
 
