@@ -904,7 +904,6 @@ export const Canvas = () => {
                     const initialLayer = JSON.stringify(initialLayers[selectedLayersRef.current[0]]);
                     const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
                     const changed = initialLayer !== liveLayer;
-                    console.log(changed);
                     if ((layerType === LayerType.Text 
                         || layerType === LayerType.Note 
                         || layerType === LayerType.Rectangle
