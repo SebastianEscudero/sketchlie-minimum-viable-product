@@ -527,7 +527,19 @@ export const Canvas = () => {
 
         if (layer) {
             const newLayer = { ...layer }; // Create a new object instead of modifying the existing one
-            if (newLayer.type === LayerType.Note) {
+            if (newLayer.type === LayerType.Note
+                || newLayer.type === LayerType.Rectangle
+                || newLayer.type === LayerType.Triangle
+                || newLayer.type === LayerType.Star
+                || newLayer.type === LayerType.Hexagon
+                || newLayer.type === LayerType.BigArrowLeft
+                || newLayer.type === LayerType.BigArrowRight
+                || newLayer.type === LayerType.BigArrowUp
+                || newLayer.type === LayerType.BigArrowDown
+                || newLayer.type === LayerType.CommentBubble
+                || newLayer.type === LayerType.Rhombus
+                || newLayer.type === LayerType.Ellipse
+            ) {
                 bounds.textFontSize = newLayer.textFontSize;
             } else if (newLayer.type === LayerType.Arrow) {
                 newLayer.center = bounds.center;
