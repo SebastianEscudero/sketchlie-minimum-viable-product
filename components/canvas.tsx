@@ -431,8 +431,7 @@ export const Canvas = () => {
 
     const insertPath = useCallback(() => {
         if (
-            pencilDraft == null ||
-            pencilDraft.length < 2
+            pencilDraft == null
         ) {
             setPencilDraft([[]]);
             return;
@@ -619,7 +618,7 @@ export const Canvas = () => {
 
         const point = pointerEventToCanvasPoint(e, camera, zoom);
 
-        if (e.button === 0) {
+        if (e.button === 0 && !isPanning) {
             if (canvasState.mode === CanvasMode.Eraser) {
                 setIsPenEraserSwitcherOpen(false);
                 setIsPenMenuOpen(false);
@@ -653,7 +652,7 @@ export const Canvas = () => {
             setStartPanPoint({ x: e.clientX, y: e.clientY });
             document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
         }
-    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches]);
+    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches, isPanning]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
@@ -984,7 +983,7 @@ export const Canvas = () => {
             ]);
 
         const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
-            if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
+            if (canvasStateRef.current.mode === CanvasMode.Eraser && e.buttons === 1) {
                 const command = new DeleteLayerCommand(
                     [layerId],
                     liveLayers,
@@ -995,7 +994,7 @@ export const Canvas = () => {
                 );
                 performAction(command);
             }
-        }, [canvasState.mode, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId]);
+        }, [liveLayers, liveLayersId, setLiveLayers, setLiveLayersId]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
         if (

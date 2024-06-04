@@ -262,9 +262,6 @@ export function penPointsToPathLayer(
   color: Color,
   pathStrokeSize: number,
 ): PathLayer {
-  if (points.length < 2) {
-    throw new Error("Cannot transform points with less than 2 points");
-  }
 
   let left = Number.POSITIVE_INFINITY;
   let top = Number.POSITIVE_INFINITY;
@@ -319,9 +316,9 @@ function precise(A: number[]): string {
 export function getSvgPathFromPoints(points: number[][], closed = false): string {
   const len = points.length;
 
-  if (len < 2) {
-    return '';
-  }
+  // if (len < 2) {
+  //   return '';
+  // }
 
   let d = `M${precise(points[0])}`;
 
