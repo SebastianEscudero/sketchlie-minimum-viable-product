@@ -26,10 +26,11 @@ export const ArrowHeadSelection = ({
         const updatedLayers: any = [];
 
         selectedLayers.map((layerId: string) => {
+            const layer = newLayers[layerId];
             if (selectedHead === 'start') {
-                newLayers[layerId].startArrowHead = newArrowHead;
+                newLayers[layerId] = { ...layer, startArrowHead: newArrowHead };
             } else {
-                newLayers[layerId].endArrowHead = newArrowHead;
+                newLayers[layerId] = { ...layer, endArrowHead: newArrowHead };
             }
 
             updatedIds.push(layerId);
@@ -50,8 +51,9 @@ export const ArrowHeadSelection = ({
         const updatedLayers: any = [];
 
         selectedLayers.map((layerId: string) => {
-            newLayers[layerId].startArrowHead = endArrowHead;
-            newLayers[layerId].endArrowHead = startArrowHead;
+            const layer = newLayers[layerId];
+            newLayers[layerId] = { ...layer, startArrowHead: endArrowHead, endArrowHead: startArrowHead };
+
 
             updatedIds.push(layerId);
             updatedLayers.push({
@@ -59,7 +61,6 @@ export const ArrowHeadSelection = ({
                 endArrowHead: newLayers[layerId].endArrowHead,
             });
         });
-
         localStorage.setItem("layers", JSON.stringify(newLayers));
         setLiveLayers(newLayers);
     }

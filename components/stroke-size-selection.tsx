@@ -20,7 +20,8 @@ export const PathStokeSizeSelection = ({
         const updatedLayers: any = [];
 
         selectedLayers.map((layerId: string) => {
-            newLayers[layerId].strokeSize = newStrokeSize[0];
+            const layer = newLayers[layerId];
+            newLayers[layerId] = { ...layer, strokeSize: newStrokeSize };
 
             updatedIds.push(layerId);
             updatedLayers.push({

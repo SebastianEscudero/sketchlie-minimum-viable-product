@@ -24,8 +24,8 @@ export const FontSizePicker = ({
             const originalFontSize = newLayers[layerId].textFontSize;
             const scaleFactor = fontSize / originalFontSize;
 
-            newLayers[layerId].textFontSize = fontSize;
-            if (newLayers[layerId].type === LayerType.Text) {
+            const layer = newLayers[layerId];
+            newLayers[layerId] = { ...layer, textFontSize: fontSize };            if (newLayers[layerId].type === LayerType.Text) {
                 newLayers[layerId].width *= scaleFactor;
                 newLayers[layerId].height *= scaleFactor;
             }
