@@ -27,7 +27,6 @@ interface LayerPreviewProps {
   layer: any;
   setLiveLayers: (layers: any) => void;
   onRefChange?: (ref: React.RefObject<any>) => void;
-  zoomRef?: React.RefObject<any>;
 };
 
 export const LayerPreview = memo(({
@@ -37,7 +36,6 @@ export const LayerPreview = memo(({
   layer,
   setLiveLayers,
   onRefChange,
-  zoomRef
 }: LayerPreviewProps) => {
 
   if (!layer) {
@@ -56,7 +54,6 @@ export const LayerPreview = memo(({
           fill={layer.fill ? colorToCss(layer.fill) : "#000"}
           stroke={selectionColor}
           strokeSize={layer.strokeSize}
-          zoomRef={zoomRef}
         />
       )
     case LayerType.Note:

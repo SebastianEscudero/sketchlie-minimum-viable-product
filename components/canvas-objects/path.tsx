@@ -8,7 +8,6 @@ interface PathProps {
     onPointerDown?: (e: React.PointerEvent) => void;
     stroke?: string;
     strokeSize?: number | undefined;
-    zoomRef?: React.RefObject<any>;
 };
 
 export const Path = ({
@@ -19,7 +18,6 @@ export const Path = ({
     onPointerDown,
     stroke,
     strokeSize,
-    zoomRef,
 }: PathProps) => {
 
     const isTransparent = fill === 'rgba(0,0,0,0)';
@@ -38,7 +36,7 @@ export const Path = ({
             strokeLinejoin="round"
             fill="none"
             stroke={stroke ?? (isTransparent ? 'black' : fill)}
-            strokeWidth={strokeSize ?? 1 / (zoomRef?.current ?? 1)**2}
+            strokeWidth={strokeSize}
             />
     );
 };

@@ -228,6 +228,7 @@ export const Canvas = () => {
         lastCommand.undo();
         setHistory(history.slice(0, -1));
         setRedoStack([...redoStack, lastCommand]);
+        layersToDeleteEraserRef.current.clear();
     };
 
     const redo = () => {
@@ -378,6 +379,7 @@ export const Canvas = () => {
         }
     }, [selectedLayersRef]);
 
+
     const EraserDeleteLayers = useCallback((current: Point) => {
         const ids = findIntersectingLayersWithPoint(
             liveLayersId,
@@ -407,7 +409,7 @@ export const Canvas = () => {
             });
         }
 
-    }, [liveLayersId, liveLayers, setLiveLayers]);
+    }, [liveLayersId, liveLayers, setLiveLayers, layersToDeleteEraserRef]);
 
     const updateSelectionNet = useCallback((current: Point, origin: Point) => {
         setCanvasState({
@@ -432,7 +434,7 @@ export const Canvas = () => {
         origin: Point,
     ) => {
         if (
-            Math.abs(current.x - origin.x) + Math.abs(current.y - origin.y) > 5
+            Math.abs(current.x - origin.x) + Math.abs(current.y - origin.y) > 1
         ) {
             setCanvasState({
                 mode: CanvasMode.SelectionNet,
@@ -879,8 +881,9 @@ export const Canvas = () => {
                     // Create a new DeleteLayerCommand and add it to the history
                     const command = new DeleteLayerCommand(Array.from(layersToDeleteEraserRef.current), deletedLayers, initialLayers, liveLayersId, setLiveLayers, setLiveLayersId);
                     performAction(command);
+                    layersToDeleteEraserRef.current.clear();
+                    return;
                 }
-                layersToDeleteEraserRef.current = new Set();
                 return;
             } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
     
@@ -1026,6 +1029,7 @@ export const Canvas = () => {
                 initialLayers,
                 history,
                 layerRef,
+                layersToDeleteEraserRef.current
             ]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
@@ -1165,7 +1169,7 @@ export const Canvas = () => {
         const clonedLayer = JSON.parse(JSON.stringify(layer));
         clonedLayer.x = clonedLayer.x + offsetX;
         clonedLayer.y = clonedLayer.y + offsetY;
-        if (clonedLayer.type === LayerType.Arrow) {
+        if (clonedLayer.type === LayerType.Arrow || clonedLayer.type === LayerType.Line) {
             clonedLayer.center.x += offsetX;
             clonedLayer.center.y += offsetY;
         }
@@ -1179,7 +1183,7 @@ export const Canvas = () => {
     setLiveLayersId(liveLayersId);
     localStorage.setItem("layers", JSON.stringify(liveLayers));
     localStorage.setItem("layerIds", JSON.stringify(liveLayersId));
-}, [copiedLayers, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId, performAction]);
+}, [copiedLayers, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId]);
 
     useEffect(() => {
         const onPointerDown = (e: PointerEvent) => {
@@ -1420,7 +1424,6 @@ export const Canvas = () => {
                             id={layerId}
                             onLayerPointerDown={onLayerPointerDown}
                             onRefChange={setLayerRef}
-                            zoomRef={zoomRef}
                         />
                     ))}
                     {currentPreviewLayer && (
