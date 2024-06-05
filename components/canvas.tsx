@@ -243,7 +243,7 @@ export const Canvas = () => {
         let layer;
         let fillColor = { r: 0, g: 0, b: 0, a: 0 }
         if (layerType === LayerType.Note) {
-            if (width < 20 && height < 20) {
+            if (width < 10 && height < 10) {
                 width = 80
                 height = 80
             }
@@ -301,7 +301,7 @@ export const Canvas = () => {
                 fill: fillColor,
             };
         } else {
-            if (width < 20 && height < 20) {
+            if (width < 10 && height < 10) {
                 width = 80
                 height = 80
             }
@@ -432,8 +432,7 @@ export const Canvas = () => {
 
     const insertPath = useCallback(() => {
         if (
-            pencilDraft == null ||
-            pencilDraft.length < 2
+            pencilDraft == null
         ) {
             setPencilDraft([[]]);
             return;
@@ -620,7 +619,7 @@ export const Canvas = () => {
 
         const point = pointerEventToCanvasPoint(e, camera, zoom);
 
-        if (e.button === 0) {
+        if (e.button === 0 && !isPanning) {
             if (canvasState.mode === CanvasMode.Eraser) {
                 setIsPenEraserSwitcherOpen(false);
                 setIsPenMenuOpen(false);
@@ -654,7 +653,7 @@ export const Canvas = () => {
             setStartPanPoint({ x: e.clientX, y: e.clientY });
             document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
         }
-    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches]);
+    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches, isPanning]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
@@ -1399,7 +1398,7 @@ export const Canvas = () => {
                             style={{
                                 fill: 'rgba(59, 130, 246, 0.3)',
                                 stroke: '#3B82F6',
-                                strokeWidth: 0.5
+                                strokeWidth: 1/zoom
                             }}
                             x={Math.min(canvasState.origin.x, canvasState.current.x)}
                             y={Math.min(canvasState.origin.y, canvasState.current.y)}
