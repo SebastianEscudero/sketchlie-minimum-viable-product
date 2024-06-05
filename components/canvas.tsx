@@ -617,7 +617,7 @@ export const Canvas = () => {
             // Zooming
             let newZoom = zoom;
             if (e.deltaY < 0) {
-                newZoom = Math.min(zoom * 1.1, 10);
+                newZoom = Math.min(zoom * 1.1, 15);
             } else {
                 newZoom = Math.max(zoom / 1.1, 0.3);
             }
@@ -1099,7 +1099,7 @@ export const Canvas = () => {
         if (distChange > 10) { // Zooming
             let newZoom = zoom;
             if (dist > pinchStartDist) {
-                newZoom = Math.min(zoom * 1.1, 10);
+                newZoom = Math.min(zoom * 1.1, 15);
             } else {
                 newZoom = Math.max(zoom / 1.1, 0.3);
             }
