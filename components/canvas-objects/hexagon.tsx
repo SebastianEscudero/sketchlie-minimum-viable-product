@@ -3,7 +3,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
 import { LayerType, HexagonLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ interface HexagonProps {
   setLiveLayers?: (layers: any) => void;
 };
 
-export const Hexagon = ({
+export const Hexagon = memo(({
   layer,
   onPointerDown,
   id,
@@ -31,25 +31,21 @@ export const Hexagon = ({
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
   const HexagonRef = useRef<any>(null);
-  const storedLayers = localStorage.getItem('layers');
-  const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
   useEffect(() => {
-    const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
-    setValue(layers[id]?.value);
-  }, [id]);
+    setValue(layer.value);
+  }, [id, layer]);
   
   const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.Hexagon) {
-      const noteLayer = liveLayers[id] as HexagonLayer;
+    if (layer && layer.type === LayerType.Hexagon) {
+      const noteLayer = layer as HexagonLayer;
       noteLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: noteLayer };
-      if (setLiveLayers) {
-        setLiveLayers(newLiveLayers);
-      }
-      localStorage.setItem('layers', JSON.stringify(liveLayers));
+      setLiveLayers?.((prevLayers: any) => {
+        const updatedLayers = { ...prevLayers, [id]: layer };
+        localStorage.setItem('layers', JSON.stringify(updatedLayers));
+        return updatedLayers;
+      });
     }
   };
 
@@ -122,7 +118,7 @@ export const Hexagon = ({
 
   return (
     <g
-        transform={`translate(${x}, ${y})`}
+        transform={`translate(${x}, ${y + height / 2})`}
         onPointerMove={(e) => {
             if (e.buttons === 1) {
                 handlePointerDown(e);
@@ -132,14 +128,13 @@ export const Hexagon = ({
         onTouchStart={(e) => handleOnTouchDown(e)}
     >
         <path
-            d={`M ${width * 0.5},0 L ${width}, ${height * 0.25} L ${width}, ${height * 0.75} L ${width * 0.5}, ${height} L 0, ${height * 0.75} L 0, ${height * 0.25} Z`}
-            fill={fillColor}
+            d={`M ${width * 0.5},${0 - height / 2} L ${width}, ${height * 0.25 - height / 2} L ${width}, ${height * 0.75 - height / 2} L ${width * 0.5}, ${height - height / 2} L 0, ${height * 0.75 - height / 2} L 0, ${height * 0.25 - height / 2} Z`} fill={fillColor}
             stroke={selectionColor || colorToCss(outlineFill || fill)}
             strokeWidth="2"
         />
         <foreignObject
-            x="0"
-            y="0"
+            x={0}
+            y={-height / 2}
             width={width}
             height={height}
             className="flex items-center justify-center"
@@ -166,4 +161,6 @@ export const Hexagon = ({
         </foreignObject>
     </g>
 );
-};
+});
+
+Hexagon.displayName = "Hexagon";

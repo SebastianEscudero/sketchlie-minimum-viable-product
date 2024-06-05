@@ -3,7 +3,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
 import { LayerType, StarLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ interface StarProps {
   setLiveLayers?: (layers: any) => void;
 };
 
-export const Star = ({
+export const Star = memo(({
   layer,
   onPointerDown,
   id,
@@ -31,25 +31,21 @@ export const Star = ({
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
   const StarRef = useRef<any>(null);
-  const storedLayers = localStorage.getItem('layers');
-  const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
   useEffect(() => {
-    const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
-    setValue(layers[id]?.value);
-  }, [id]);
+    setValue(layer.value);
+  }, [id, layer]);
   
   const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.Star) {
-      const noteLayer = liveLayers[id] as StarLayer;
+    if (layer && layer.type === LayerType.Star) {
+      const noteLayer = layer as StarLayer;
       noteLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: noteLayer };
-      if (setLiveLayers) {
-        setLiveLayers(newLiveLayers);
-      }
-      localStorage.setItem('layers', JSON.stringify(liveLayers));
+      setLiveLayers?.((prevLayers: any) => {
+        const updatedLayers = { ...prevLayers, [id]: layer };
+        localStorage.setItem('layers', JSON.stringify(updatedLayers));
+        return updatedLayers;
+      });
     }
   };
 
@@ -122,24 +118,23 @@ export const Star = ({
 
   return (
     <g
-        transform={`translate(${x}, ${y})`}
+        transform={`translate(${x}, ${y + height / 2})`}
         onPointerMove={(e) => {
-            if (e.buttons === 1) {
-                handlePointerDown(e);
-            }
+        if (e.buttons === 1) {
+            handlePointerDown(e);
+        }
         }}
         onPointerDown={(e) => handlePointerDown(e)}
         onTouchStart={(e) => handleOnTouchDown(e)}
     >
         <path
-            d={`M ${width * 0.5},0 L ${width * 0.67},${height * 0.35} L ${width},${height * 0.38} L ${width * 0.72},${height * 0.6} L ${width * 0.83},${height} L ${width * 0.5},${height * 0.77} L ${width * 0.17},${height} L ${width * 0.28},${height * 0.6} L 0,${height * 0.38} L ${width * 0.33},${height * 0.35} Z`}
-            fill={fillColor}
+d={`M ${width * 0.5},${0 - height/2} L ${width * 0.67},${height * 0.35 - height/2} L ${width},${height * 0.38 - height/2} L ${width * 0.72},${height * 0.6 - height/2} L ${width * 0.83},${height - height/2} L ${width * 0.5},${height * 0.77 - height/2} L ${width * 0.17},${height - height/2} L ${width * 0.28},${height * 0.6 - height/2} L 0,${height * 0.38 - height/2} L ${width * 0.33},${height * 0.35 - height/2} Z`}                fill={fillColor}
             stroke={selectionColor || colorToCss(outlineFill || fill)}
             strokeWidth="2"
         />
         <foreignObject
-            x="0"
-            y="0"
+            x={0}
+            y={-height / 2}
             width={width}
             height={height}
             className="flex items-center justify-center"
@@ -166,4 +161,6 @@ export const Star = ({
         </foreignObject>
     </g>
 );
-};
+});
+
+Star.displayName = 'Star';

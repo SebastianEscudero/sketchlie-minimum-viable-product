@@ -337,6 +337,7 @@ export const Canvas = () => {
     }, [liveLayers, liveLayersId, selectedLayersRef]);
 
     const translateSelectedLayers = useCallback((point: Point) => {
+        console.log(liveLayers);
         if (canvasState.mode !== CanvasMode.Translating) {
             return;
         }
@@ -466,7 +467,7 @@ export const Canvas = () => {
         }
 
         const id = nanoid();
-        liveLayers[id] = penPointsToPathLayer(pencilDraft, { ...pathColor, a: 0.5 }, 30 / zoom);
+        liveLayers[id] = penPointsToPathLayer(pencilDraft, { ...pathColor, a: 0.7 }, 30 / zoom);
 
         const command = new InsertLayerCommand(
             [id], 
@@ -527,7 +528,19 @@ export const Canvas = () => {
 
         if (layer) {
             const newLayer = { ...layer }; // Create a new object instead of modifying the existing one
-            if (newLayer.type === LayerType.Note) {
+            if (newLayer.type === LayerType.Note 
+                || newLayer.type === LayerType.Rectangle 
+                || newLayer.type === LayerType.Ellipse
+                || newLayer.type === LayerType.Rhombus
+                || newLayer.type === LayerType.Triangle
+                || newLayer.type === LayerType.Star
+                || newLayer.type === LayerType.Hexagon
+                || newLayer.type === LayerType.BigArrowLeft
+                || newLayer.type === LayerType.BigArrowRight
+                || newLayer.type === LayerType.BigArrowUp
+                || newLayer.type === LayerType.BigArrowDown
+                || newLayer.type === LayerType.CommentBubble
+            ) {
                 bounds.textFontSize = newLayer.textFontSize;
             } else if (newLayer.type === LayerType.Arrow) {
                 newLayer.center = bounds.center;
@@ -572,7 +585,7 @@ export const Canvas = () => {
             // Zooming
             let newZoom = zoom;
             if (e.deltaY < 0) {
-                newZoom = Math.min(zoom * 1.1, 3.5);
+                newZoom = Math.min(zoom * 1.1, 10);
             } else {
                 newZoom = Math.max(zoom / 1.1, 0.3);
             }
@@ -892,8 +905,7 @@ export const Canvas = () => {
                     const layerType = liveLayers[selectedLayersRef.current[0]].type;
                     const initialLayer = JSON.stringify(initialLayers[selectedLayersRef.current[0]]);
                     const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
-                    const changed = initialLayer !== liveLayer;
-                    console.log(changed);
+                    const changed = initialLayer === liveLayer;
                     if ((layerType === LayerType.Text 
                         || layerType === LayerType.Note 
                         || layerType === LayerType.Rectangle
@@ -907,7 +919,7 @@ export const Canvas = () => {
                         || layerType === LayerType.BigArrowUp
                         || layerType === LayerType.BigArrowDown
                         || layerType === LayerType.CommentBubble)
-                        && !changed && layerRef.current) {
+                        && changed && layerRef.current) {
                         const layer = layerRef.current;
                         layer.focus();
     
@@ -970,20 +982,6 @@ export const Canvas = () => {
                 history,
                 layerRef,
             ]);
-
-        const onPathErase = useCallback((e: React.PointerEvent, layerId: string) => {
-            if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
-                const command = new DeleteLayerCommand(
-                    [layerId],
-                    liveLayers,
-                    { ...liveLayers },
-                    [...liveLayersId],
-                    setLiveLayers,
-                    setLiveLayersId
-                );
-                performAction(command);
-            }
-        }, [canvasState.mode, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
         if (
@@ -1051,7 +1049,7 @@ export const Canvas = () => {
         if (distChange > 10) { // Zooming
             let newZoom = zoom;
             if (dist > pinchStartDist) {
-                newZoom = Math.min(zoom * 1.1, 3.5);
+                newZoom = Math.min(zoom * 1.1, 10);
             } else {
                 newZoom = Math.max(zoom / 1.1, 0.3);
             }
@@ -1115,30 +1113,28 @@ export const Canvas = () => {
         const prevLiveLayerIds = JSON.parse(localStorage.getItem("layerIds") || '[]');
     
         const newSelection = [];
-        const newLiveLayers = { ...prevLiveLayers };
-        const newLiveLayerIds = [...prevLiveLayerIds];
         copiedLayers.forEach((layer) => {
-            const newId = nanoid();
-            newSelection.push(newId);
-            newLiveLayerIds.push(newId);
-            const clonedLayer = JSON.parse(JSON.stringify(layer));
-            clonedLayer.x = clonedLayer.x + offsetX;
-            clonedLayer.y = clonedLayer.y + offsetY;
-            if (clonedLayer.type === LayerType.Arrow) {
-                clonedLayer.center.x += offsetX;
-                clonedLayer.center.y += offsetY;
-            }
-            newLiveLayers[newId] = clonedLayer;
-        });
-    
-        const command = new InsertLayerCommand(newLiveLayerIds, Object.values(newLiveLayers), prevLiveLayers, prevLiveLayerIds, setLiveLayers, setLiveLayersId);
-        performAction(command);
-    
-        setLiveLayers(newLiveLayers);
-        setLiveLayersId(newLiveLayerIds);
-        localStorage.setItem("layers", JSON.stringify(newLiveLayers));
-        localStorage.setItem("layerIds", JSON.stringify(newLiveLayerIds));
-    }, [copiedLayers, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId, performAction]);
+        const newId = nanoid();
+        newSelection.push(newId);
+        liveLayersId.push(newId);
+        const clonedLayer = JSON.parse(JSON.stringify(layer));
+        clonedLayer.x = clonedLayer.x + offsetX;
+        clonedLayer.y = clonedLayer.y + offsetY;
+        if (clonedLayer.type === LayerType.Arrow) {
+            clonedLayer.center.x += offsetX;
+            clonedLayer.center.y += offsetY;
+        }
+        liveLayers[newId] = clonedLayer;
+    });
+
+    const command = new InsertLayerCommand(liveLayersId, Object.values(liveLayers), prevLiveLayers, prevLiveLayerIds, setLiveLayers, setLiveLayersId);
+    performAction(command);
+
+    setLiveLayers(liveLayers);
+    setLiveLayersId(liveLayersId);
+    localStorage.setItem("layers", JSON.stringify(liveLayers));
+    localStorage.setItem("layerIds", JSON.stringify(liveLayersId));
+}, [copiedLayers, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId, performAction]);
 
     useEffect(() => {
         const onPointerDown = (e: PointerEvent) => {
@@ -1373,9 +1369,8 @@ export const Canvas = () => {
                 >
                     {liveLayersId.map((layerId: any) => (
                         <LayerPreview
-                            onPathErase={onPathErase}
                             setLiveLayers={setLiveLayers}
-                            liveLayers={liveLayers}
+                            layer={liveLayers[layerId]}
                             key={layerId}
                             id={layerId}
                             onLayerPointerDown={onLayerPointerDown}
@@ -1420,7 +1415,7 @@ export const Canvas = () => {
                                     canvasState.mode === CanvasMode.Laser
                                         ? '#F35223'
                                         : canvasState.mode === CanvasMode.Highlighter
-                                            ? colorToCss({ ...pathColor, a: 0.5 }) // Semi-transparent yellow
+                                            ? colorToCss({ ...pathColor, a: 0.7 }) // Semi-transparent yellow
                                             : colorToCss(pathColor)
                                 }
                                 x={0}

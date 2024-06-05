@@ -23,9 +23,8 @@ import { BigArrowDown } from "./canvas-objects/bigArrowDown";
 interface LayerPreviewProps {
   id: string;
   onLayerPointerDown: (e: React.PointerEvent, layerId: string) => void;
-  onPathErase: (e: React.PointerEvent, layerId: string) => void;
   selectionColor?: string;
-  liveLayers: any;
+  layer: any;
   setLiveLayers: (layers: any) => void;
   onRefChange?: (ref: React.RefObject<any>) => void;
   zoomRef?: React.RefObject<any>;
@@ -33,16 +32,13 @@ interface LayerPreviewProps {
 
 export const LayerPreview = memo(({
   id,
-  onPathErase,
   onLayerPointerDown,
   selectionColor,
-  liveLayers,
+  layer,
   setLiveLayers,
   onRefChange,
   zoomRef
 }: LayerPreviewProps) => {
-
-  const layer = liveLayers[id];
 
   if (!layer) {
     return null;
@@ -54,7 +50,6 @@ export const LayerPreview = memo(({
         <Path
           key={id}
           points={layer.points}
-          onPathErase={(e) => onPathErase(e, id)}
           onPointerDown={(e) => onLayerPointerDown(e, id)}
           x={layer.x}
           y={layer.y}

@@ -1,9 +1,9 @@
 import { Kalam } from "next/font/google";
 import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
-import { LayerType, RhombusLayer } from "@/types/canvas";
+import { LayerType, RhombusLayer, UpdateLayerMutation } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ interface RhombusProps {
   setLiveLayers?: (layers: any) => void;
 };
 
-export const Rhombus = ({
+export const Rhombus = memo(({
   layer,
   onPointerDown,
   id,
@@ -27,33 +27,29 @@ export const Rhombus = ({
   onRefChange,
   setLiveLayers
 }: RhombusProps) => {
+  const RhombusRef = useRef<any>(null);
   const { x, y, width, height, fill, outlineFill, value: initialValue, textFontSize } = layer;
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
-  const RhombusRef = useRef<any>(null);
-  const storedLayers = localStorage.getItem('layers');
-  const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
   useEffect(() => {
-    const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
-    setValue(layers[id]?.value);
-  }, [id]);
-  
-  const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.Rhombus) {
-      const RhombusLayer = liveLayers[id] as RhombusLayer;
+    setValue(layer.value);
+  }, [id, layer]);
+
+  const updateValue = useCallback((newValue: string) => {
+    if (layer && layer.type === LayerType.Rhombus) {
+      const RhombusLayer = layer as RhombusLayer;
       RhombusLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: RhombusLayer };
-      if (setLiveLayers) {
-        setLiveLayers(newLiveLayers);
-      }
-      localStorage.setItem('layers', JSON.stringify(liveLayers));
+      setLiveLayers?.((prevLayers: any) => {
+        const updatedLayers = { ...prevLayers, [id]: layer };
+        localStorage.setItem('layers', JSON.stringify(updatedLayers));
+        return updatedLayers;
+      });
     }
-  };
+  }, [id, layer]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       const selection = window.getSelection();
@@ -72,17 +68,17 @@ export const Rhombus = ({
         e.currentTarget.dispatchEvent(newEvent);
       }
     }
-  };
+  }, []);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     if (onPointerDown) onPointerDown(e, id);
     if (onRefChange) {
       onRefChange(RhombusRef);
     }
-  };
+  }, [onPointerDown, id, onRefChange]);
 
-  const handleOnTouchDown = (e: React.TouchEvent) => {
+  const handleOnTouchDown = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     if (e.touches.length > 1) {
       return;
@@ -93,13 +89,13 @@ export const Rhombus = ({
     if (onRefChange) {
       onRefChange(RhombusRef);
     }
-  }
+  }, [onPointerDown, id, onRefChange, RhombusRef]);
 
-  const handleContentChange = (e: ContentEditableEvent) => {
+  const handleContentChange = useCallback((e: ContentEditableEvent) => {
     updateValue(e.target.value);
-  };
+  }, [updateValue]);
 
-  const handlePaste = async (e: React.ClipboardEvent) => {
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
     e.preventDefault();
     const text = await navigator.clipboard.readText();
     const selection = window.getSelection();
@@ -108,7 +104,7 @@ export const Rhombus = ({
       range.deleteContents();
       range.insertNode(document.createTextNode(text));
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (onRefChange) {
@@ -122,24 +118,24 @@ export const Rhombus = ({
 
   return (
     <g
-      transform={`translate(${x}, ${y})`}
+      transform={`translate(${x}, ${y + height / 2})`}
       onPointerMove={(e) => {
         if (e.buttons === 1) {
-            handlePointerDown(e);
+          handlePointerDown(e);
         }
       }}
       onPointerDown={(e) => handlePointerDown(e)}
       onTouchStart={(e) => handleOnTouchDown(e)}
     >
       <path
-        d={`M ${width/2} 0 L ${width} ${height/2} L ${width/2} ${height} L 0 ${height/2} Z`}
+        d={`M ${width / 2} ${-height / 2} L ${width} 0 L ${width / 2} ${height / 2} L 0 0 Z`}
         fill={fillColor}
         stroke={selectionColor || colorToCss(outlineFill || fill)}
         strokeWidth="2"
       />
       <foreignObject
-        x="0"
-        y="0"
+        x={0}
+        y={-height / 2}
         width={width}
         height={height}
         className="flex items-center justify-center"
@@ -166,4 +162,6 @@ export const Rhombus = ({
       </foreignObject>
     </g>
   );
-};
+});
+
+Rhombus.displayName = 'Rhombus';

@@ -3,7 +3,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
 import { LayerType, NoteLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ interface NoteProps {
   setLiveLayers?: (layers: any) => void;
 };
 
-export const Note = ({
+export const Note = memo(({
   layer,
   onPointerDown,
   id,
@@ -31,25 +31,21 @@ export const Note = ({
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
   const noteRef = useRef<any>(null);
-  const storedLayers = localStorage.getItem('layers');
-  const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
   useEffect(() => {
-    const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
-    setValue(layers[id]?.value);
-  }, [id]);
+    setValue(layer.value);
+  }, [id, layer]);
   
   const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.Note) {
-      const noteLayer = liveLayers[id] as NoteLayer;
+    if (layer && layer.type === LayerType.Note) {
+      const noteLayer = layer as NoteLayer;
       noteLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: noteLayer };
-      if (setLiveLayers) {
-        setLiveLayers(newLiveLayers);
-      }
-      localStorage.setItem('layers', JSON.stringify(liveLayers));
+      setLiveLayers?.((prevLayers: any) => {
+        const updatedLayers = { ...prevLayers, [id]: layer };
+        localStorage.setItem('layers', JSON.stringify(updatedLayers));
+        return updatedLayers;
+      });
     }
   };
 
@@ -121,44 +117,54 @@ export const Note = ({
   }
 
   return (
-    <foreignObject
-      x={x}
-      y={y}
-      width={width}
-      height={height}
+    <g
+      transform={`translate(${x + width / 2}, ${y + height / 2})`}
       onPointerMove={(e) => {
         if (e.buttons === 1) {
-            handlePointerDown(e);
+          handlePointerDown(e);
         }
-    }}
-      strokeWidth={2}
+      }}
       onPointerDown={(e) => handlePointerDown(e)}
       onTouchStart={(e) => handleOnTouchDown(e)}
-      style={{
-        borderColor: `${selectionColor || colorToCss(outlineFill || fill)}`,
-        backgroundColor: fillColor,
-      }}
-      className="drop-shadow-lg flex items-center justify-center border-[2px] border-spacing-3"
     >
-      <ContentEditable
-        innerRef={noteRef}
-        onKeyDown={handleKeyDown}
-        html={value || ""}
-        onChange={handleContentChange}
-        onPaste={handlePaste}
-        className={cn(
-          "h-full w-full flex items-center justify-center text-center outline-none",
-          font.className
-        )}
-        style={{
-          fontSize: textFontSize,
-          color: fill ? getContrastingTextColor(fill) : "#000",
-          textWrap: "wrap",
-          lineHeight: value ? 'normal' : `${height}px`,
-          WebkitUserSelect: 'auto'
-        }}
-        spellCheck={false}
+      <rect
+        x={-width / 2}
+        y={-height / 2}
+        width={width}
+        height={height}
+        fill={fillColor}
+        stroke={selectionColor || colorToCss(outlineFill || fill)}
+        strokeWidth="2"
+        className="drop-shadow-md"
       />
-    </foreignObject>
+      <foreignObject
+        x={-width / 2}
+        y={-height / 2}
+        width={width}
+        height={height}
+      >
+        <ContentEditable
+          innerRef={noteRef}
+          onKeyDown={handleKeyDown}
+          html={value || ""}
+          onChange={handleContentChange}
+          onPaste={handlePaste}
+          className={cn(
+            "h-full w-full flex items-center justify-center text-center outline-none",
+            font.className
+          )}
+          style={{
+            fontSize: textFontSize,
+            color: fill ? getContrastingTextColor(fill) : "#000",
+            textWrap: "wrap",
+            lineHeight: value ? 'normal' : `${height}px`,
+            WebkitUserSelect: 'auto'
+          }}
+          spellCheck={false}
+        />
+      </foreignObject>
+    </g>
   );
-};
+});
+
+Note.displayName = 'Note';

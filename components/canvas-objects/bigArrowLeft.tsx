@@ -3,7 +3,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
 import { LayerType, BigArrowLeftLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ interface BigArrowLeftProps {
   setLiveLayers?: (layers: any) => void;
 };
 
-export const BigArrowLeft = ({
+export const BigArrowLeft = memo(({
   layer,
   onPointerDown,
   id,
@@ -31,25 +31,21 @@ export const BigArrowLeft = ({
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
   const BigArrowLeftRef = useRef<any>(null);
-  const storedLayers = localStorage.getItem('layers');
-  const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
   useEffect(() => {
-    const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
-    setValue(layers[id]?.value);
-  }, [id]);
+    setValue(layer.value);
+  }, [id, layer]);
   
   const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.BigArrowLeft) {
-      const noteLayer = liveLayers[id] as BigArrowLeftLayer;
+    if (layer && layer.type === LayerType.BigArrowLeft) {
+      const noteLayer = layer as BigArrowLeftLayer;
       noteLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: noteLayer };
-      if (setLiveLayers) {
-        setLiveLayers(newLiveLayers);
-      }
-      localStorage.setItem('layers', JSON.stringify(liveLayers));
+      setLiveLayers?.((prevLayers: any) => {
+        const updatedLayers = { ...prevLayers, [id]: layer };
+        localStorage.setItem('layers', JSON.stringify(updatedLayers));
+        return updatedLayers;
+      });
     }
   };
 
@@ -122,7 +118,7 @@ export const BigArrowLeft = ({
 
   return (
     <g
-      transform={`translate(${x}, ${y})`}
+      transform={`translate(${x}, ${y + height / 2})`}
       onPointerMove={(e) => {
         if (e.buttons === 1) {
           handlePointerDown(e);
@@ -132,14 +128,13 @@ export const BigArrowLeft = ({
       onTouchStart={(e) => handleOnTouchDown(e)}
     >
       <path
-        d={`M ${width / 2} ${height} L 0 ${height / 2} L ${width / 2} 0 L ${width / 2} ${height / 4} L ${width} ${height / 4} L ${width} ${height * 3 / 4} L ${width / 2} ${height * 3 / 4} Z`}
-        fill={fillColor}
+        d={`M ${width / 2} ${height - height / 2} L 0 ${height / 2 - height / 2} L ${width / 2} ${0 - height / 2} L ${width / 2} ${height / 4 - height / 2} L ${width} ${height / 4 - height / 2} L ${width} ${height * 3 / 4 - height / 2} L ${width / 2} ${height * 3 / 4 - height / 2} Z`} fill={fillColor}
         stroke={selectionColor || colorToCss(outlineFill || fill)}
         strokeWidth="2"
       />
       <foreignObject
-        x="0"
-        y="0"
+        x={0}
+        y={-height / 2}
         width={width}
         height={height}
         className="flex items-center justify-center"
@@ -166,4 +161,6 @@ export const BigArrowLeft = ({
       </foreignObject>
     </g>
   );
-};
+});
+
+BigArrowLeft.displayName = 'BigArrowLeft';

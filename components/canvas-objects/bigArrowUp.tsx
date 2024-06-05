@@ -3,7 +3,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
 import { LayerType, BigArrowUpLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ interface BigArrowUpProps {
   setLiveLayers?: (layers: any) => void;
 };
 
-export const BigArrowUp = ({
+export const BigArrowUp = memo(({
   layer,
   onPointerDown,
   id,
@@ -31,25 +31,21 @@ export const BigArrowUp = ({
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
   const BigArrowUpRef = useRef<any>(null);
-  const storedLayers = localStorage.getItem('layers');
-  const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
   useEffect(() => {
-    const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
-    setValue(layers[id]?.value);
-  }, [id]);
+    setValue(layer.value);
+  }, [id, layer]);
   
   const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.BigArrowUp) {
-      const noteLayer = liveLayers[id] as BigArrowUpLayer;
+    if (layer && layer.type === LayerType.BigArrowUp) {
+      const noteLayer = layer as BigArrowUpLayer;
       noteLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: noteLayer };
-      if (setLiveLayers) {
-        setLiveLayers(newLiveLayers);
-      }
-      localStorage.setItem('layers', JSON.stringify(liveLayers));
+      setLiveLayers?.((prevLayers: any) => {
+        const updatedLayers = { ...prevLayers, [id]: layer };
+        localStorage.setItem('layers', JSON.stringify(updatedLayers));
+        return updatedLayers;
+      });
     }
   };
 
@@ -122,7 +118,7 @@ export const BigArrowUp = ({
 
   return (
     <g
-      transform={`translate(${x}, ${y})`}
+      transform={`translate(${x}, ${y + height / 2})`}
       onPointerMove={(e) => {
         if (e.buttons === 1) {
           handlePointerDown(e);
@@ -132,14 +128,13 @@ export const BigArrowUp = ({
       onTouchStart={(e) => handleOnTouchDown(e)}
     >
       <path
-        d={`M ${width / 2} 0 L 0 ${height / 2} L ${width / 4} ${height / 2} L ${width / 4} ${height} L ${width * 3 / 4} ${height} L ${width * 3 / 4} ${height / 2} L ${width} ${height / 2} Z`}
-        fill={fillColor}
+        d={`M ${width / 2} ${0 - height / 2} L 0 ${height / 2 - height / 2} L ${width / 4} ${height / 2 - height / 2} L ${width / 4} ${height - height / 2} L ${width * 3 / 4} ${height - height / 2} L ${width * 3 / 4} ${height / 2 - height / 2} L ${width} ${height / 2 - height / 2} Z`} fill={fillColor}
         stroke={selectionColor || colorToCss(outlineFill || fill)}
         strokeWidth="2"
       />
       <foreignObject
-        x="0"
-        y="0"
+        x={0}
+        y={-height / 2}
         width={width}
         height={height}
         className="flex items-center justify-center"
@@ -166,4 +161,6 @@ export const BigArrowUp = ({
       </foreignObject>
     </g>
   );
-};
+});
+
+BigArrowUp.displayName = "BigArrowUp";

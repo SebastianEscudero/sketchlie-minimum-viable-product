@@ -3,7 +3,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
 import { LayerType, RectangleLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ interface RectangleProps {
   setLiveLayers?: (layers: any) => void;
 };
 
-export const Rectangle = ({
+export const Rectangle = memo(({
   layer,
   onPointerDown,
   id,
@@ -31,25 +31,21 @@ export const Rectangle = ({
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
   const RectangleRef = useRef<any>(null);
-  const storedLayers = localStorage.getItem('layers');
-  const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
   useEffect(() => {
-    const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
-    setValue(layers[id]?.value);
-  }, [id]);
+    setValue(layer.value);
+  }, [id, layer]);
   
   const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.Rectangle) {
-      const noteLayer = liveLayers[id] as RectangleLayer;
+    if (layer && layer.type === LayerType.Rectangle) {
+      const noteLayer = layer as RectangleLayer;
       noteLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: noteLayer };
-      if (setLiveLayers) {
-        setLiveLayers(newLiveLayers);
-      }
-      localStorage.setItem('layers', JSON.stringify(liveLayers));
+      setLiveLayers?.((prevLayers: any) => {
+        const updatedLayers = { ...prevLayers, [id]: layer };
+        localStorage.setItem('layers', JSON.stringify(updatedLayers));
+        return updatedLayers;
+      });
     }
   };
 
@@ -121,44 +117,55 @@ export const Rectangle = ({
   }
 
   return (
-    <foreignObject
-      x={x}
-      y={y}
-      width={width}
-      height={height}
+    <g
+      transform={`translate(${x}, ${y + height / 2})`}
       onPointerMove={(e) => {
         if (e.buttons === 1) {
-            handlePointerDown(e);
+          handlePointerDown(e);
         }
-    }}
-      strokeWidth={2}
+      }}
       onPointerDown={(e) => handlePointerDown(e)}
       onTouchStart={(e) => handleOnTouchDown(e)}
-      style={{
-        borderColor: `${selectionColor || colorToCss(outlineFill || fill)}`,
-        backgroundColor: fillColor,
-      }}
-      className="flex items-center justify-center border-[2px] border-spacing-3 rounded-sm"
     >
-      <ContentEditable
-        innerRef={RectangleRef}
-        onKeyDown={handleKeyDown}
-        html={value || ""}
-        onChange={handleContentChange}
-        onPaste={handlePaste}
-        className={cn(
-          "h-full w-full flex items-center justify-center text-center outline-none",
-          font.className
-        )}
-        style={{
-          fontSize: textFontSize,
-          color: fill ? getContrastingTextColor(fill) : "#000",
-          textWrap: "wrap",
-          lineHeight: value ? 'normal' : `${height}px`,
-          WebkitUserSelect: 'auto'
-        }}
-        spellCheck={false}
+      <rect
+        x={0}
+        y={-height / 2}
+        width={width}
+        height={height}
+        fill={fillColor}
+        stroke={selectionColor || colorToCss(outlineFill || fill)}
+        strokeWidth="2"
+        rx="2"
+        ry="2"
       />
-    </foreignObject>
+      <foreignObject
+        x={0}
+        y={-height / 2}
+        width={width}
+        height={height}
+      >
+        <ContentEditable
+          innerRef={RectangleRef}
+          onKeyDown={handleKeyDown}
+          html={value || ""}
+          onChange={handleContentChange}
+          onPaste={handlePaste}
+          className={cn(
+            "h-full w-full flex items-center justify-center text-center outline-none",
+            font.className
+          )}
+          style={{
+            fontSize: textFontSize,
+            color: fill ? getContrastingTextColor(fill) : "#000",
+            textWrap: "wrap",
+            lineHeight: value ? 'normal' : `${height}px`,
+            WebkitUserSelect: 'auto'
+          }}
+          spellCheck={false}
+        />
+      </foreignObject>
+    </g>
   );
-};
+});
+
+Rectangle.displayName = 'Rectangle';

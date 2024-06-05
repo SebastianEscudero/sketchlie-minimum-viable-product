@@ -3,7 +3,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 
 import { LayerType, TriangleLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ interface TriangleProps {
   setLiveLayers?: (layers: any) => void;
 };
 
-export const Triangle = ({
+export const Triangle = memo(({
   layer,
   onPointerDown,
   id,
@@ -31,25 +31,21 @@ export const Triangle = ({
   const [value, setValue] = useState(initialValue);
   const fillColor = colorToCss(fill);
   const TriangleRef = useRef<any>(null);
-  const storedLayers = localStorage.getItem('layers');
-  const liveLayers = storedLayers ? JSON.parse(storedLayers) : {};
 
   useEffect(() => {
-    const storedLayers = localStorage.getItem('layers');
-    const layers = storedLayers ? JSON.parse(storedLayers) : {};
-    setValue(layers[id]?.value);
-  }, [id]);
+    setValue(layer.value);
+  }, [id, layer]);
   
   const updateValue = (newValue: string) => {
-    if (liveLayers[id] && liveLayers[id].type === LayerType.Triangle) {
-      const TriangleLayer = liveLayers[id] as TriangleLayer;
-      TriangleLayer.value = newValue;
+    if (layer && layer.type === LayerType.Triangle) {
+      const noteLayer = layer as TriangleLayer;
+      noteLayer.value = newValue;
       setValue(newValue);
-      const newLiveLayers = { ...liveLayers, [id]: TriangleLayer };
-      if (setLiveLayers) {
-        setLiveLayers(newLiveLayers);
-      }
-      localStorage.setItem('layers', JSON.stringify(liveLayers));
+      setLiveLayers?.((prevLayers: any) => {
+        const updatedLayers = { ...prevLayers, [id]: layer };
+        localStorage.setItem('layers', JSON.stringify(updatedLayers));
+        return updatedLayers;
+      });
     }
   };
 
@@ -122,7 +118,7 @@ export const Triangle = ({
 
   return (
     <g
-      transform={`translate(${x}, ${y})`}
+      transform={`translate(${x}, ${y + height / 2})`}
       onPointerMove={(e) => {
         if (e.buttons === 1) {
             handlePointerDown(e);
@@ -132,14 +128,14 @@ export const Triangle = ({
       onTouchStart={(e) => handleOnTouchDown(e)}
     >
       <polygon
-        points={`${width/2},0 ${width},${height} 0,${height}`}
+        points={`${width/2},${-height/2} ${width},${height/2} 0,${height/2}`}
         fill={fillColor}
         stroke={selectionColor || colorToCss(outlineFill || fill)}
         strokeWidth="2"
       />
       <foreignObject
-        x="0"
-        y="0"
+        x={0}
+        y={-height / 2}
         width={width}
         height={height}
         className="flex items-center justify-center"
@@ -166,4 +162,6 @@ export const Triangle = ({
       </foreignObject>
     </g>
   );
-};
+});
+
+Triangle.displayName = "Triangle";
