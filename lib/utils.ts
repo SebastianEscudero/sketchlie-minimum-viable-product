@@ -191,6 +191,54 @@ export function getLayerIdAtPointer(current: Point, layers: { [key: string]: Lay
   return null;
 }
 
+export function findIntersectingLayersWithPoint(
+  layerIds: readonly string[],
+  layers: { [key: string]: Layer },
+  point: Point,
+) {
+  const ids = [];
+
+  for (const layerId of layerIds) {
+    const layer = layers[layerId];
+
+    if (layer == null) {
+      continue;
+    }
+
+    if (layer.type === LayerType.Arrow && layer.center || layer.type === LayerType.Line && layer.center) {
+      const { x, y, width, height, center } = layer;
+      const length = Math.sqrt(width * width + height * height);
+      const angle = Math.atan2(center.y - y, center.x - x);
+      const end = {
+        x: x + length * Math.cos(angle),
+        y: y + length * Math.sin(angle),
+      };
+
+      if (
+        point.x > Math.min(x, end.x) &&
+        point.x < Math.max(x, end.x) && 
+        point.y > Math.min(y, end.y) &&
+        point.y < Math.max(y, end.y)
+      ) {
+        ids.push(layerId);
+      }
+    } else {
+      const { x, y, height, width } = layer;
+
+      if (
+        point.x > x &&
+        point.x < x + width && 
+        point.y > y &&
+        point.y < y + height
+      ) {
+        ids.push(layerId);
+      }
+    }
+  }
+
+  return ids;
+};
+
 export function findIntersectingLayersWithRectangle(
   layerIds: readonly string[],
   layers: { [key: string]: Layer },

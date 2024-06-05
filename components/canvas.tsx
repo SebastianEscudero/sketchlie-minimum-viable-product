@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { useCallback, useState, useEffect, useRef } from "react";
 import {
     colorToCss,
+    findIntersectingLayersWithPoint,
     findIntersectingLayersWithRectangle,
     penPointsToPathLayer,
     pointerEventToCanvasPoint,
@@ -115,20 +116,18 @@ class DeleteLayerCommand implements Command {
         undo() {
             const newLayers = { ...this.prevLayers };
             const newLayerIds = [...this.prevLayerIds];
-
-            const layersToAdd = this.layerIds.map(id => {
-                newLayers[id] = this.layers[id];
+        
+            this.layerIds.forEach(id => {
                 if (!newLayerIds.includes(id)) {
                     newLayerIds.push(id);
                 }
-                return this.layers[id];
             });
-
+        
             // Call the addLayer API mutation to add all the layers back in the database
             this.setLiveLayers(newLayers);
             this.setLiveLayerIds(newLayerIds);
-
-            localStorage.setItem("layers", JSON.stringify(layersToAdd));
+        
+            localStorage.setItem("layers", JSON.stringify(newLayers));
             localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
         }
 }
@@ -191,6 +190,7 @@ export const Canvas = () => {
     const [copiedLayers, setCopiedLayers] = useState<Map<string, any>>(new Map());
     const [pencilDraft, setPencilDraft] = useState<number[][]>([[]]);
     const [layerRef, setLayerRef] = useState<any>(null);
+    const layersToDeleteEraserRef = useRef<Set<string>>(new Set());
     const [canvasState, setCanvasState] = useState<CanvasState>({
         mode: CanvasMode.None,
     });
@@ -286,7 +286,7 @@ export const Canvas = () => {
                 center: center,
                 height: height,
                 width: width,
-                fill: fillColor,
+                fill: { r: 0, g: 0, b: 0, a: 1},
                 startArrowHead: ArrowHead.None,
                 endArrowHead: ArrowHead.Triangle,
             };
@@ -298,7 +298,7 @@ export const Canvas = () => {
                 center: center,
                 height: height,
                 width: width,
-                fill: fillColor,
+                fill: { r: 0, g: 0, b: 0, a: 1},
             };
         } else {
             if (width < 10 && height < 10) {
@@ -337,7 +337,6 @@ export const Canvas = () => {
     }, [liveLayers, liveLayersId, selectedLayersRef]);
 
     const translateSelectedLayers = useCallback((point: Point) => {
-        console.log(liveLayers);
         if (canvasState.mode !== CanvasMode.Translating) {
             return;
         }
@@ -378,6 +377,37 @@ export const Canvas = () => {
             selectedLayersRef.current = ([]);
         }
     }, [selectedLayersRef]);
+
+    const EraserDeleteLayers = useCallback((current: Point) => {
+        const ids = findIntersectingLayersWithPoint(
+            liveLayersId,
+            liveLayers,
+            current,
+        );
+
+        if (ids.length > 0) {
+            setLiveLayers(prevLiveLayers => {
+                let newLiveLayers;
+                for (const id of ids) {
+                    const isLayerDeleted = layersToDeleteEraserRef.current.has(id);
+                    if (!isLayerDeleted) {
+                        if (!newLiveLayers) {
+                            newLiveLayers = { ...prevLiveLayers };
+                        }
+                        const layer = newLiveLayers[id];
+                        newLiveLayers[id] = { 
+                            ...layer, 
+                            ...('fill' in layer && layer.fill ? { fill: { ...layer.fill, a: layer.fill.a/4 } } : {}),
+                            ...('outlineFill' in layer && layer.outlineFill ? { outlineFill: { ...layer.outlineFill, a: layer.outlineFill.a/4 } } : {})
+                        };
+                        layersToDeleteEraserRef.current.add(id);
+                    }
+                }
+                return newLiveLayers || prevLiveLayers;
+            });
+        }
+
+    }, [liveLayersId, liveLayers, setLiveLayers]);
 
     const updateSelectionNet = useCallback((current: Point, origin: Point) => {
         setCanvasState({
@@ -687,6 +717,8 @@ export const Canvas = () => {
             startMultiSelection(current, canvasState.origin);
         } else if (canvasState.mode === CanvasMode.SelectionNet) {
             updateSelectionNet(current, canvasState.origin);
+        } else if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
+            EraserDeleteLayers(current);
         } else if (canvasState.mode === CanvasMode.Translating) {
             translateSelectedLayers(current);
         } else if (canvasState.mode === CanvasMode.Resizing) {
@@ -797,7 +829,8 @@ export const Canvas = () => {
             setCamera,
             zoom,
             startPanPoint,
-            activeTouches
+            activeTouches,
+            EraserDeleteLayers
         ]);
 
         const onPointerUp = useCallback((e: React.PointerEvent) => {    
@@ -835,6 +868,19 @@ export const Canvas = () => {
                 setPencilDraft([]);
             } else if (canvasState.mode === CanvasMode.Eraser) {
                 document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
+                if (layersToDeleteEraserRef.current.size > 0) {
+                    const newLayers = { ...liveLayers };
+                    const deletedLayers: { [key: string]: any } = {};
+                    Array.from(layersToDeleteEraserRef.current).forEach((id: any) => {
+                        deletedLayers[id] = newLayers[id];
+                        delete newLayers[id];
+                    });
+    
+                    // Create a new DeleteLayerCommand and add it to the history
+                    const command = new DeleteLayerCommand(Array.from(layersToDeleteEraserRef.current), deletedLayers, initialLayers, liveLayersId, setLiveLayers, setLiveLayersId);
+                    performAction(command);
+                }
+                layersToDeleteEraserRef.current = new Set();
                 return;
             } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
     
