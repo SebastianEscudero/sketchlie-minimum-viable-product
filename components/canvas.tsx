@@ -385,6 +385,7 @@ export const Canvas = () => {
             liveLayersId,
             liveLayers,
             current,
+            zoom
         );
 
         if (ids.length > 0) {
@@ -409,7 +410,7 @@ export const Canvas = () => {
             });
         }
 
-    }, [liveLayersId, liveLayers, setLiveLayers, layersToDeleteEraserRef]);
+    }, [liveLayersId, liveLayers, setLiveLayers, layersToDeleteEraserRef, zoom]);
 
     const updateSelectionNet = useCallback((current: Point, origin: Point) => {
         setCanvasState({
