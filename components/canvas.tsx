@@ -48,39 +48,34 @@ class InsertLayerCommand implements Command {
         private prevLayerIds: string[], 
         private setLiveLayers: (layers: Layers) => void,
         private setLiveLayerIds: (layerIds: string[]) => void) {}
+
     execute() {
-      let newLayers = { ...this.prevLayers };
-      let newLayerIds = [...this.prevLayerIds];
-
-      this.layerIds.forEach((layerId, index) => {
-        newLayers = { ...newLayers, [layerId]: this.layers[index] };
-        newLayerIds = [...newLayerIds, layerId];
-      });
-
-      this.setLiveLayers(newLayers);
-      this.setLiveLayerIds(newLayerIds);
-
-      // Call the addLayer API mutation to add the layers in the database
-      localStorage.setItem("layers", JSON.stringify(newLayers));
-      localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
+        let newLayers = { ...this.prevLayers };
+        let newLayerIds = [...this.prevLayerIds];
+    
+        this.layerIds.forEach((layerId, index) => {
+            if (!newLayerIds.includes(layerId)) { // Check if layerId is not already in newLayerIds
+                newLayers = { ...newLayers, [layerId]: this.layers[index] };
+                newLayerIds = [...newLayerIds, layerId];
+            }
+        });
+    
+        this.setLiveLayers(newLayers);
+        this.setLiveLayerIds(newLayerIds);
+    
+        // Call the addLayer API mutation to add the layers in the database
+        localStorage.setItem("layers", JSON.stringify(newLayers));
+        localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
     }
 
     undo() {
-      let remainingLayers = { ...this.prevLayers };
-      let remainingLayerIds = [...this.prevLayerIds];
-
-      this.layerIds.forEach((layerId) => {
-        const { [layerId]: _, ...remaining } = remainingLayers;
-        remainingLayers = remaining;
-        remainingLayerIds = remainingLayerIds.filter(id => id !== layerId);
-      });
-
-      this.setLiveLayers(remainingLayers);
-      this.setLiveLayerIds(remainingLayerIds);
-
-      // Call the deleteLayer API mutation to delete the layers in the database
-      localStorage.setItem("layers", JSON.stringify(remainingLayers));
-      localStorage.setItem("layerIds", JSON.stringify(remainingLayerIds));
+        // Set liveLayers and liveLayerIds to their previous state
+        this.setLiveLayers(this.prevLayers);
+        this.setLiveLayerIds(this.prevLayerIds);
+    
+        // Update the local storage
+        localStorage.setItem("layers", JSON.stringify(this.prevLayers));
+        localStorage.setItem("layerIds", JSON.stringify(this.prevLayerIds));
     }
 }
 
@@ -617,9 +612,9 @@ export const Canvas = () => {
             // Zooming
             let newZoom = zoom;
             if (e.deltaY < 0) {
-                newZoom = Math.min(zoom * 1.1, 13);
+                newZoom = Math.min(zoom * 1.15, 13);
             } else {
-                newZoom = Math.max(zoom / 1.1, 0.3);
+                newZoom = Math.max(zoom / 1.15, 0.3);
             }
 
             const zoomFactor = newZoom / zoom;
@@ -833,7 +828,7 @@ export const Canvas = () => {
             zoom,
             startPanPoint,
             activeTouches,
-            EraserDeleteLayers
+            EraserDeleteLayers,
         ]);
 
         const onPointerUp = useCallback((e: React.PointerEvent) => {    
@@ -1162,29 +1157,32 @@ export const Canvas = () => {
         const prevLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');
         const prevLiveLayerIds = JSON.parse(localStorage.getItem("layerIds") || '[]');
     
+        const newLiveLayers = { ...liveLayers };
+        const newLiveLayersId = [...liveLayersId];
+    
         const newSelection = [];
         copiedLayers.forEach((layer) => {
-        const newId = nanoid();
-        newSelection.push(newId);
-        liveLayersId.push(newId);
-        const clonedLayer = JSON.parse(JSON.stringify(layer));
-        clonedLayer.x = clonedLayer.x + offsetX;
-        clonedLayer.y = clonedLayer.y + offsetY;
-        if (clonedLayer.type === LayerType.Arrow || clonedLayer.type === LayerType.Line) {
-            clonedLayer.center.x += offsetX;
-            clonedLayer.center.y += offsetY;
-        }
-        liveLayers[newId] = clonedLayer;
-    });
-
-    const command = new InsertLayerCommand(liveLayersId, Object.values(liveLayers), prevLiveLayers, prevLiveLayerIds, setLiveLayers, setLiveLayersId);
-    performAction(command);
-
-    setLiveLayers(liveLayers);
-    setLiveLayersId(liveLayersId);
-    localStorage.setItem("layers", JSON.stringify(liveLayers));
-    localStorage.setItem("layerIds", JSON.stringify(liveLayersId));
-}, [copiedLayers, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId]);
+            const newId = nanoid();
+            newSelection.push(newId);
+            newLiveLayersId.push(newId);
+            const clonedLayer = JSON.parse(JSON.stringify(layer));
+            clonedLayer.x = clonedLayer.x + offsetX;
+            clonedLayer.y = clonedLayer.y + offsetY;
+            if (clonedLayer.type === LayerType.Arrow || clonedLayer.type === LayerType.Line) {
+                clonedLayer.center.x += offsetX;
+                clonedLayer.center.y += offsetY;
+            }
+            newLiveLayers[newId] = clonedLayer;
+        });
+    
+        const command = new InsertLayerCommand(newLiveLayersId, Object.values(newLiveLayers), prevLiveLayers, prevLiveLayerIds, setLiveLayers, setLiveLayersId);
+        performAction(command);
+    
+        setLiveLayers(newLiveLayers);
+        setLiveLayersId(newLiveLayersId);
+        localStorage.setItem("layers", JSON.stringify(newLiveLayers));
+        localStorage.setItem("layerIds", JSON.stringify(newLiveLayersId));
+    }, [copiedLayers, liveLayers, liveLayersId, setLiveLayers, setLiveLayersId]);
 
     useEffect(() => {
         const onPointerDown = (e: PointerEvent) => {
