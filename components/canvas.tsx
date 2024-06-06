@@ -196,7 +196,7 @@ export const Canvas = () => {
     const [startPanPoint, setStartPanPoint] = useState({ x: 0, y: 0 });
     const [currentPreviewLayer, setCurrentPreviewLayer] = useState<PreviewLayer | null>(null);
     const [activeTouches, setActiveTouches] = useState(0);
-    const [pathColor, setPathColor] = useState({ r: 1, g: 1, b: 1, a: 1 });
+    const [pathColor, setPathColor] = useState({ r: 29, g: 29, b: 29, a: 1 });
     const [pathStrokeSize, setPathStrokeSize] = useState(4);
 
     useEffect(() => {
@@ -259,7 +259,7 @@ export const Canvas = () => {
                 y: position.y,
                 height: height,
                 width: width,
-                fill: fillColor,
+                fill: { r: 29, g: 29, b: 29, a: 1 },
                 textFontSize: 12,
                 outlineFill: null
             };
@@ -282,7 +282,7 @@ export const Canvas = () => {
                 center: center,
                 height: height,
                 width: width,
-                fill: { r: 0, g: 0, b: 0, a: 1},
+                fill: { r: 29, g: 29, b: 29, a: 1 },
                 startArrowHead: ArrowHead.None,
                 endArrowHead: ArrowHead.Triangle,
             };
@@ -294,7 +294,7 @@ export const Canvas = () => {
                 center: center,
                 height: height,
                 width: width,
-                fill: { r: 0, g: 0, b: 0, a: 1},
+                fill: { r: 29, g: 29, b: 29, a: 1 },
             };
         } else {
             if (width < 10 && height < 10) {
@@ -308,7 +308,7 @@ export const Canvas = () => {
                 height: height,
                 width: width,
                 fill: fillColor,
-                outlineFill: { r: 1, g: 1, b: 1, a: 1 },
+                outlineFill: { r: 29, g: 29, b: 29, a: 1 },
                 textFontSize: 12,
             }; 
         }
@@ -749,37 +749,37 @@ export const Canvas = () => {
 
             switch (canvasState.layerType) {
                 case LayerType.Rectangle:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Triangle:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Triangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Triangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Star:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Star, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Star, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Hexagon:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Hexagon, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Hexagon, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.BigArrowLeft:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowLeft, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowLeft, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.BigArrowRight:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowRight, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowRight, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.BigArrowUp:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowUp, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowUp, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.BigArrowDown:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowDown, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowDown, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.CommentBubble:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.CommentBubble, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.CommentBubble, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Rhombus:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Rhombus, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Rhombus, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Ellipse:
-                    setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Ellipse, textFontSize: 12, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Ellipse, textFontSize: 12, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Text:
                     setCurrentPreviewLayer({ x, y, width, height: 18, textFontSize: 12, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 39, g: 142, b: 237, a: 1 } });
@@ -1430,7 +1430,7 @@ export const Canvas = () => {
                             layer={currentPreviewLayer}
                         />
                     )}
-                    {(canvasState.mode === CanvasMode.SelectionNet || canvasState.mode === CanvasMode.None || CanvasMode.Resizing) && activeTouches < 2 && (
+                    {(canvasState.mode === CanvasMode.SelectionNet || canvasState.mode === CanvasMode.None || canvasState.mode === CanvasMode.Resizing) && activeTouches < 2 && (
                         <SelectionBox
                             zoom={zoom}
                             liveLayers={liveLayers}
