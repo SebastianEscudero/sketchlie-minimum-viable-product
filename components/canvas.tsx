@@ -3,11 +3,12 @@
 import { nanoid } from "nanoid";
 import { useCallback, useState, useEffect, useRef } from "react";
 import {
-    checkIfPathIsCircle,
+    checkIfPathIsEllipse,
     checkIfPathIsRectangle,
     colorToCss,
     findIntersectingLayersWithPoint,
     findIntersectingLayersWithRectangle,
+    getShapeType,
     penPointsToPathLayer,
     pointerEventToCanvasPoint,
     resizeArrowBounds,
@@ -47,24 +48,24 @@ class InsertLayerCommand implements Command {
     constructor(private layerIds: any[],
         private layers: any[],
         private prevLayers: Layers,
-        private prevLayerIds: string[], 
+        private prevLayerIds: string[],
         private setLiveLayers: (layers: Layers) => void,
-        private setLiveLayerIds: (layerIds: string[]) => void) {}
+        private setLiveLayerIds: (layerIds: string[]) => void) { }
 
     execute() {
         let newLayers = { ...this.prevLayers };
         let newLayerIds = [...this.prevLayerIds];
-    
+
         this.layerIds.forEach((layerId, index) => {
             if (!newLayerIds.includes(layerId)) { // Check if layerId is not already in newLayerIds
                 newLayers = { ...newLayers, [layerId]: this.layers[index] };
                 newLayerIds = [...newLayerIds, layerId];
             }
         });
-    
+
         this.setLiveLayers(newLayers);
         this.setLiveLayerIds(newLayerIds);
-    
+
         // Call the addLayer API mutation to add the layers in the database
         localStorage.setItem("layers", JSON.stringify(newLayers));
         localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
@@ -74,7 +75,7 @@ class InsertLayerCommand implements Command {
         // Set liveLayers and liveLayerIds to their previous state
         this.setLiveLayers(this.prevLayers);
         this.setLiveLayerIds(this.prevLayerIds);
-    
+
         // Update the local storage
         localStorage.setItem("layers", JSON.stringify(this.prevLayers));
         localStorage.setItem("layerIds", JSON.stringify(this.prevLayerIds));
@@ -85,48 +86,48 @@ class DeleteLayerCommand implements Command {
     constructor(private layerIds: string[],
         private layers: any,
         private prevLayers: Layers,
-        private prevLayerIds: string[], 
+        private prevLayerIds: string[],
         private setLiveLayers: (layers: Layers) => void,
-        private setLiveLayerIds: (layerIds: string[]) => void) {}
+        private setLiveLayerIds: (layerIds: string[]) => void) { }
 
-        execute() {
-            const remainingLayers = { ...this.prevLayers };
-            const remainingLayerIds = [...this.prevLayerIds];
+    execute() {
+        const remainingLayers = { ...this.prevLayers };
+        const remainingLayerIds = [...this.prevLayerIds];
 
-            this.layerIds.forEach(id => {
-                delete remainingLayers[id];
-                const index = remainingLayerIds.indexOf(id);
-                if (index > -1) {
-                    remainingLayerIds.splice(index, 1);
-                }
-            });
+        this.layerIds.forEach(id => {
+            delete remainingLayers[id];
+            const index = remainingLayerIds.indexOf(id);
+            if (index > -1) {
+                remainingLayerIds.splice(index, 1);
+            }
+        });
 
-            // Call the deleteLayer API mutation to delete all the layers in the database
+        // Call the deleteLayer API mutation to delete all the layers in the database
 
-            localStorage.setItem("layers", JSON.stringify(remainingLayers));
-            localStorage.setItem("layerIds", JSON.stringify(remainingLayerIds));
+        localStorage.setItem("layers", JSON.stringify(remainingLayers));
+        localStorage.setItem("layerIds", JSON.stringify(remainingLayerIds));
 
-            this.setLiveLayers(remainingLayers);
-            this.setLiveLayerIds(remainingLayerIds);
-        }
+        this.setLiveLayers(remainingLayers);
+        this.setLiveLayerIds(remainingLayerIds);
+    }
 
-        undo() {
-            const newLayers = { ...this.prevLayers };
-            const newLayerIds = [...this.prevLayerIds];
-        
-            this.layerIds.forEach(id => {
-                if (!newLayerIds.includes(id)) {
-                    newLayerIds.push(id);
-                }
-            });
-        
-            // Call the addLayer API mutation to add all the layers back in the database
-            this.setLiveLayers(newLayers);
-            this.setLiveLayerIds(newLayerIds);
-        
-            localStorage.setItem("layers", JSON.stringify(newLayers));
-            localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
-        }
+    undo() {
+        const newLayers = { ...this.prevLayers };
+        const newLayerIds = [...this.prevLayerIds];
+
+        this.layerIds.forEach(id => {
+            if (!newLayerIds.includes(id)) {
+                newLayerIds.push(id);
+            }
+        });
+
+        // Call the addLayer API mutation to add all the layers back in the database
+        this.setLiveLayers(newLayers);
+        this.setLiveLayerIds(newLayerIds);
+
+        localStorage.setItem("layers", JSON.stringify(newLayers));
+        localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
+    }
 }
 
 class TranslateLayersCommand implements Command {
@@ -134,7 +135,7 @@ class TranslateLayersCommand implements Command {
         private layerIds: string[],
         private initialLayers: any,
         public finalLayers: any,
-        private setLiveLayers: (layers: any) => void,) {}
+        private setLiveLayers: (layers: any) => void,) { }
 
     execute() {
         this.setLiveLayers({ ...this.finalLayers });
@@ -201,6 +202,7 @@ export const Canvas = () => {
     const [pathColor, setPathColor] = useState({ r: 29, g: 29, b: 29, a: 1 });
     const [pathStrokeSize, setPathStrokeSize] = useState(4);
     const [magicPathAssist, setMagicPathAssist] = useState(false);
+    const [layerWithAssistDraw, setLayerWithAssistDraw] = useState(false);
 
     useEffect(() => {
         const storedLayers = localStorage.getItem("layers");
@@ -313,7 +315,7 @@ export const Canvas = () => {
                 fill: fillColor,
                 outlineFill: { r: 29, g: 29, b: 29, a: 1 },
                 textFontSize: 12,
-            }; 
+            };
         }
         const newLayers = { ...liveLayers, [layerId]: layer };
         const newLayerIds = [...liveLayersId, layerId];
@@ -332,8 +334,13 @@ export const Canvas = () => {
         localStorage.setItem("layers", JSON.stringify(newLayers));
         setShowingSelectionBox(true);
 
-        setCanvasState({ mode: CanvasMode.None });
-    }, [liveLayers, liveLayersId, selectedLayersRef]);
+        if (layerWithAssistDraw) {
+            setLayerWithAssistDraw(false);
+            setCanvasState({ mode: CanvasMode.Pencil });
+        } else {
+            setCanvasState({ mode: CanvasMode.None });
+        }
+    }, [liveLayers, liveLayersId, selectedLayersRef, layerWithAssistDraw]);
 
     const translateSelectedLayers = useCallback((point: Point) => {
         if (canvasState.mode !== CanvasMode.Translating) {
@@ -396,10 +403,10 @@ export const Canvas = () => {
                             newLiveLayers = { ...prevLiveLayers };
                         }
                         const layer = newLiveLayers[id];
-                        newLiveLayers[id] = { 
-                            ...layer, 
-                            ...('fill' in layer && layer.fill ? { fill: { ...layer.fill, a: layer.fill.a/4 } } : {}),
-                            ...('outlineFill' in layer && layer.outlineFill ? { outlineFill: { ...layer.outlineFill, a: layer.outlineFill.a/4 } } : {})
+                        newLiveLayers[id] = {
+                            ...layer,
+                            ...('fill' in layer && layer.fill ? { fill: { ...layer.fill, a: layer.fill.a / 4 } } : {}),
+                            ...('outlineFill' in layer && layer.outlineFill ? { outlineFill: { ...layer.outlineFill, a: layer.outlineFill.a / 4 } } : {})
                         };
                         layersToDeleteEraserRef.current.add(id);
                     }
@@ -474,16 +481,16 @@ export const Canvas = () => {
         liveLayers[id] = penPointsToPathLayer(pencilDraft, pathColor, pathStrokeSize);
 
         const command = new InsertLayerCommand(
-            [id], 
-            [liveLayers[id]], 
-            { ...liveLayers }, 
-            [...liveLayersId], 
-            setLiveLayers, 
+            [id],
+            [liveLayers[id]],
+            { ...liveLayers },
+            [...liveLayersId],
+            setLiveLayers,
             setLiveLayersId
         );
 
         setPencilDraft([[]]);
-        performAction(command); 
+        performAction(command);
 
         setCanvasState({ mode: CanvasMode.Pencil });
     }, [pencilDraft, liveLayers, liveLayersId]);
@@ -492,9 +499,8 @@ export const Canvas = () => {
         if (pencilDraft == null || magicPathAssist === false) {
             return;
         }
-    
-        const timeoutId = setTimeout(() => {
 
+        const timeoutId = setTimeout(() => {
             if (pencilDraft[0].length < 2) {
                 return;
             }
@@ -503,40 +509,68 @@ export const Canvas = () => {
             const maxX = Math.max(...pencilDraft.map(point => point[0]));
             const minY = Math.min(...pencilDraft.map(point => point[1]));
             const maxY = Math.max(...pencilDraft.map(point => point[1]));
-            const width = Math.abs(maxX - minX);
-            const height = Math.abs(maxY - minY);
-            const CircleTolerance = Math.min(width/zoom, (height)/zoom)/(10/zoom)
-            const RectangleTolerance = 0.86;
-            let {isCircle, circleCheck} = checkIfPathIsCircle(pencilDraft, CircleTolerance);
-            let {isRectangle, RectangleCheck} = checkIfPathIsRectangle(pencilDraft, RectangleTolerance);
-            
-            console.log(isCircle, circleCheck, 'isCircle')
-            console.log(isRectangle, RectangleCheck, 'isRectangle')
+            const CircleTolerance = 0.30;
+            const RectangleTolerance = 0.80;
+            const LineTolerance = 20;
+            const triangleTolerance = 0.80;
 
-            if (isCircle || isRectangle) {
+            const layerType = getShapeType(pencilDraft, CircleTolerance, RectangleTolerance, LineTolerance, triangleTolerance);
 
-                const layerType = isRectangle ? LayerType.Rectangle : LayerType.Ellipse;
+            if (layerType !== LayerType.Path) {
+
                 let panX = minX;
                 let panY = minY;
-
+              
                 if (Math.abs(mousePositionRef.current.x - minX) < Math.abs(mousePositionRef.current.x - maxX)) {
-                    panX = maxX
+                  panX = maxX
                 }
-
+              
                 if (Math.abs(mousePositionRef.current.y - minY) < Math.abs(mousePositionRef.current.y - maxY)) {
-                    panY = maxY
+                  panY = maxY
                 }
-
+              
                 setPencilDraft([[]]);
-                setCurrentPreviewLayer({ x: Math.min(minX, maxX), y: Math.min(minY, maxY), width, height, textFontSize: 12,  type: layerType, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
-                setStartPanPoint({ x: panX , y: panY });
+              
+                if (layerType === LayerType.Line) {
+
+                  const width =  panX - mousePositionRef.current.x
+                  const height = panY - mousePositionRef.current.y
+
+                  setCurrentPreviewLayer({
+                    type: LayerType.Line,
+                    x: mousePositionRef.current.x,
+                    y: mousePositionRef.current.y,
+                    center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
+                    height,
+                    width,
+                    fill: { r: 0, g: 0, b: 0, a: 0 },
+                  });
+
+                  setStartPanPoint({ x: mousePositionRef.current.x, y: mousePositionRef.current.y });
+                } else {
+
+                  const width = Math.abs(maxX - minX);
+                  const height = Math.abs(maxY - minY);
+
+                  setCurrentPreviewLayer({
+                    x: Math.min(minX, maxX),
+                    y: Math.min(minY, maxY),
+                    width,
+                    height,
+                    textFontSize: 12,
+                    type: layerType,
+                    fill: { r: 0, g: 0, b: 0, a: 0 },
+                    outlineFill: { r: 1, g: 1, b: 1, a: 1 },
+                  });
+                  setStartPanPoint({ x: panX, y: panY });
+                }
+              
                 setCanvasState({ mode: CanvasMode.Inserting, layerType: layerType });
                 setIsPanning(true);
-            }
+                setLayerWithAssistDraw(true);
+              }
         }, 1000);
 
-
-    
         return () => clearTimeout(timeoutId);
     }, [pencilDraft, setPencilDraft, zoom, magicPathAssist]);
 
@@ -553,16 +587,16 @@ export const Canvas = () => {
         liveLayers[id] = penPointsToPathLayer(pencilDraft, { ...pathColor, a: 0.7 }, 30 / zoom);
 
         const command = new InsertLayerCommand(
-            [id], 
-            [liveLayers[id]], 
-            { ...liveLayers }, 
-            [...liveLayersId], 
-            setLiveLayers, 
+            [id],
+            [liveLayers[id]],
+            { ...liveLayers },
+            [...liveLayersId],
+            setLiveLayers,
             setLiveLayersId
         );
 
         setPencilDraft([[]]);
-        performAction(command); 
+        performAction(command);
 
         setCanvasState({ mode: CanvasMode.Highlighter });
     }, [pencilDraft, liveLayers, liveLayersId]);
@@ -611,8 +645,8 @@ export const Canvas = () => {
 
         if (layer) {
             const newLayer = { ...layer }; // Create a new object instead of modifying the existing one
-            if (newLayer.type === LayerType.Note 
-                || newLayer.type === LayerType.Rectangle 
+            if (newLayer.type === LayerType.Note
+                || newLayer.type === LayerType.Rectangle
                 || newLayer.type === LayerType.Ellipse
                 || newLayer.type === LayerType.Rhombus
                 || newLayer.type === LayerType.Triangle
@@ -805,34 +839,34 @@ export const Canvas = () => {
 
             switch (canvasState.layerType) {
                 case LayerType.Rectangle:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Triangle:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Triangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Triangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Star:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Star, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Star, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Hexagon:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Hexagon, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Hexagon, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.BigArrowLeft:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowLeft, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.BigArrowLeft, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.BigArrowRight:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowRight, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.BigArrowRight, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.BigArrowUp:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowUp, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.BigArrowUp, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.BigArrowDown:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.BigArrowDown, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.BigArrowDown, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.CommentBubble:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.CommentBubble, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.CommentBubble, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Rhombus:
-                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12,  type: LayerType.Rhombus, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Rhombus, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Ellipse:
                     setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Ellipse, textFontSize: 12, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
@@ -887,203 +921,203 @@ export const Canvas = () => {
             EraserDeleteLayers,
         ]);
 
-        const onPointerUp = useCallback((e: React.PointerEvent) => {    
-            
-            setIsRightClickPanning(false);
-            const point = pointerEventToCanvasPoint(e, camera, zoom);
-            if (canvasState.mode === CanvasMode.SelectionNet) {
-                if (selectedLayersRef.current.length > 0) {
-                    setShowingSelectionBox(true);
-                } else {
-                    setShowingSelectionBox(false);
-                }
+    const onPointerUp = useCallback((e: React.PointerEvent) => {
+
+        setIsRightClickPanning(false);
+        const point = pointerEventToCanvasPoint(e, camera, zoom);
+        if (canvasState.mode === CanvasMode.SelectionNet) {
+            if (selectedLayersRef.current.length > 0) {
+                setShowingSelectionBox(true);
+            } else {
+                setShowingSelectionBox(false);
             }
-    
-            if (canvasState.mode !== CanvasMode.Translating && canvasState.mode !== CanvasMode.SelectionNet) {
-                setShowingSelectionBox(false)
-            }
-    
-            if (
-                canvasState.mode === CanvasMode.None ||
-                canvasState.mode === CanvasMode.Pressing
-            ) {
-                document.body.style.cursor = 'default';
-                unselectLayers();
-                setCanvasState({
-                    mode: CanvasMode.None,
+        }
+
+        if (canvasState.mode !== CanvasMode.Translating && canvasState.mode !== CanvasMode.SelectionNet) {
+            setShowingSelectionBox(false)
+        }
+
+        if (
+            canvasState.mode === CanvasMode.None ||
+            canvasState.mode === CanvasMode.Pressing
+        ) {
+            document.body.style.cursor = 'default';
+            unselectLayers();
+            setCanvasState({
+                mode: CanvasMode.None,
+            });
+        } else if (canvasState.mode === CanvasMode.Pencil) {
+            document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 2 18, auto';
+            insertPath();
+        } else if (canvasState.mode === CanvasMode.Highlighter) {
+            document.body.style.cursor = 'url(/custom-cursors/highlighter.svg) 2 18, auto';
+            insertHighlight();
+        } else if (canvasState.mode === CanvasMode.Laser) {
+            document.body.style.cursor = 'url(/custom-cursors/laser.svg) 4 18, auto';
+            setPencilDraft([]);
+        } else if (canvasState.mode === CanvasMode.Eraser) {
+            document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
+            if (layersToDeleteEraserRef.current.size > 0) {
+                const newLayers = { ...liveLayers };
+                const deletedLayers: { [key: string]: any } = {};
+                Array.from(layersToDeleteEraserRef.current).forEach((id: any) => {
+                    deletedLayers[id] = newLayers[id];
+                    delete newLayers[id];
                 });
-            } else if (canvasState.mode === CanvasMode.Pencil) {
-                document.body.style.cursor = 'url(/custom-cursors/pencil.svg) 2 18, auto';
-                insertPath();
-            } else if (canvasState.mode === CanvasMode.Highlighter) {
-                document.body.style.cursor = 'url(/custom-cursors/highlighter.svg) 2 18, auto';
-                insertHighlight();
-            } else if (canvasState.mode === CanvasMode.Laser) {
-                document.body.style.cursor = 'url(/custom-cursors/laser.svg) 4 18, auto';
-                setPencilDraft([]);
-            } else if (canvasState.mode === CanvasMode.Eraser) {
-                document.body.style.cursor = 'url(/custom-cursors/eraser.svg) 8 8, auto';
-                if (layersToDeleteEraserRef.current.size > 0) {
-                    const newLayers = { ...liveLayers };
-                    const deletedLayers: { [key: string]: any } = {};
-                    Array.from(layersToDeleteEraserRef.current).forEach((id: any) => {
-                        deletedLayers[id] = newLayers[id];
-                        delete newLayers[id];
-                    });
-    
-                    // Create a new DeleteLayerCommand and add it to the history
-                    const command = new DeleteLayerCommand(Array.from(layersToDeleteEraserRef.current), deletedLayers, initialLayers, liveLayersId, setLiveLayers, setLiveLayersId);
-                    performAction(command);
-                    layersToDeleteEraserRef.current.clear();
-                    return;
-                }
+
+                // Create a new DeleteLayerCommand and add it to the history
+                const command = new DeleteLayerCommand(Array.from(layersToDeleteEraserRef.current), deletedLayers, initialLayers, liveLayersId, setLiveLayers, setLiveLayersId);
+                performAction(command);
+                layersToDeleteEraserRef.current.clear();
                 return;
-            } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
-    
-                if (e.button === 2 || e.button === 1) {
-                    document.body.style.cursor = 'url(/custom-cursors/inserting.svg) 12 12, auto';
-                    return;
+            }
+            return;
+        } else if (canvasState.mode === CanvasMode.Inserting && canvasState.layerType !== LayerType.Image) {
+
+            if (e.button === 2 || e.button === 1) {
+                document.body.style.cursor = 'url(/custom-cursors/inserting.svg) 12 12, auto';
+                return;
+            }
+
+            const layerType = canvasState.layerType;
+            setIsPanning(false);
+            if (isPanning && currentPreviewLayer) {
+                if (layerType === LayerType.Arrow && currentPreviewLayer.type === LayerType.Arrow
+                    || layerType === LayerType.Line && currentPreviewLayer.type === LayerType.Line
+                ) {
+                    insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height, currentPreviewLayer.center)
+                    setCurrentPreviewLayer(null);
+                } else {
+                    insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height);
+                    setCurrentPreviewLayer(null);
                 }
-    
-                const layerType = canvasState.layerType;
-                setIsPanning(false);
-                if (isPanning && currentPreviewLayer) {
-                    if (layerType === LayerType.Arrow && currentPreviewLayer.type === LayerType.Arrow
-                        || layerType === LayerType.Line && currentPreviewLayer.type === LayerType.Line
-                    ) {
-                        insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height, currentPreviewLayer.center)
-                        setCurrentPreviewLayer(null);
-                    } else {
-                        insertLayer(layerType, { x: currentPreviewLayer.x, y: currentPreviewLayer.y }, currentPreviewLayer.width, currentPreviewLayer.height);
-                        setCurrentPreviewLayer(null);
-                    }
-                } else if (layerType !== LayerType.Arrow && layerType !== LayerType.Line) {
-                    let width
-                    let height
-                    if (layerType === LayerType.Text) {
-                        width = 95;
-                        height = 18;
-                        point.x = point.x - width / 2
-                        point.y = point.y - height / 2
-                        insertLayer(layerType, point, width, height)
-                    } else {
-                        width = 80;
-                        height = 80;
-                        point.x = point.x - width / 2
-                        point.y = point.y - height / 2
-                        insertLayer(layerType, point, width, height);
-                    }
+            } else if (layerType !== LayerType.Arrow && layerType !== LayerType.Line) {
+                let width
+                let height
+                if (layerType === LayerType.Text) {
+                    width = 95;
+                    height = 18;
+                    point.x = point.x - width / 2
+                    point.y = point.y - height / 2
+                    insertLayer(layerType, point, width, height)
+                } else {
+                    width = 80;
+                    height = 80;
+                    point.x = point.x - width / 2
+                    point.y = point.y - height / 2
+                    insertLayer(layerType, point, width, height);
                 }
-            } else if (canvasState.mode === CanvasMode.Moving) {
-                document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
-                setIsPanning(false);
-            } else if (canvasState.mode === CanvasMode.Translating) {
-                let layerIds: any = [];
-                let layerUpdates: any = [];
-                selectedLayersRef.current.forEach(id => {
-                    const newLayer = liveLayers[id];
-                    if (newLayer) {
-                        layerIds.push(id);
-                        layerUpdates.push(newLayer);
-                    }
-                });
-    
-                if (layerIds.length > 0) {
-                    let lastState;
-                    if (history.length > 0) {
-                        lastState = (history[history.length - 1] as TranslateLayersCommand).finalLayers;
-                    }
-    
-                    // Compare the initialLayers with the finalLayers of the last history state
-                    if (!lastState || JSON.stringify(liveLayers) !== JSON.stringify(lastState)) {
-                        const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
-                        performAction(command);
-                    }
+            }
+        } else if (canvasState.mode === CanvasMode.Moving) {
+            document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
+            setIsPanning(false);
+        } else if (canvasState.mode === CanvasMode.Translating) {
+            let layerIds: any = [];
+            let layerUpdates: any = [];
+            selectedLayersRef.current.forEach(id => {
+                const newLayer = liveLayers[id];
+                if (newLayer) {
+                    layerIds.push(id);
+                    layerUpdates.push(newLayer);
                 }
-    
-                setShowingSelectionBox(true);
-                if (selectedLayersRef.current.length === 1 && showingSelectionBox) {
-                    const layerType = liveLayers[selectedLayersRef.current[0]].type;
-                    const initialLayer = JSON.stringify(initialLayers[selectedLayersRef.current[0]]);
-                    const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
-                    const changed = initialLayer === liveLayer;
-                    if ((layerType === LayerType.Text 
-                        || layerType === LayerType.Note 
-                        || layerType === LayerType.Rectangle
-                        || layerType === LayerType.Ellipse 
-                        || layerType === LayerType.Rhombus
-                        || layerType === LayerType.Triangle
-                        || layerType === LayerType.Star
-                        || layerType === LayerType.Hexagon
-                        || layerType === LayerType.BigArrowLeft
-                        || layerType === LayerType.BigArrowRight
-                        || layerType === LayerType.BigArrowUp
-                        || layerType === LayerType.BigArrowDown
-                        || layerType === LayerType.CommentBubble)
-                        && changed && layerRef.current) {
-                        const layer = layerRef.current;
-                        layer.focus();
-    
-                        const range = document.createRange();
-                        range.selectNodeContents(layer);
-                        range.collapse(false);
-    
-                        const selection = window.getSelection();
-                        selection?.removeAllRanges();
-                        selection?.addRange(range);
-                        if (layer.value || layer.value === "") {
-                            layer.selectionStart = layer.selectionEnd = layer.value.length;
-                        }
-                    }
-                }   
-    
-                setCanvasState({
-                    mode: CanvasMode.None,
-                });
-            } else if (canvasState.mode === CanvasMode.Resizing || canvasState.mode === CanvasMode.ArrowResizeHandler) {
-                setShowingSelectionBox(true);
-                let layerIds: any = [];
-                let layerUpdates: any = [];
-                selectedLayersRef.current.forEach(id => {
-                    const newLayer = liveLayers[id];
-                    if (newLayer) {
-                        layerIds.push(id);
-                        layerUpdates.push(newLayer);
-                    }
-                });
-    
-                if (layerIds.length > 0) {
+            });
+
+            if (layerIds.length > 0) {
+                let lastState;
+                if (history.length > 0) {
+                    lastState = (history[history.length - 1] as TranslateLayersCommand).finalLayers;
+                }
+
+                // Compare the initialLayers with the finalLayers of the last history state
+                if (!lastState || JSON.stringify(liveLayers) !== JSON.stringify(lastState)) {
                     const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
                     performAction(command);
                 }
-                setCanvasState({
-                    mode: CanvasMode.None,
-                });
-            } else {
-                document.body.style.cursor = 'default';
-                setCanvasState({
-                    mode: CanvasMode.None,
-                });
             }
-        },
-            [
-                setCanvasState,
-                canvasState,
-                insertLayer,
-                unselectLayers,
-                insertPath,
-                setIsPanning,
-                selectedLayersRef,
-                liveLayers,
-                camera,
-                zoom,
-                currentPreviewLayer,
-                isPanning,
-                initialLayers,
-                history,
-                layerRef,
-                layersToDeleteEraserRef.current
-            ]);
+
+            setShowingSelectionBox(true);
+            if (selectedLayersRef.current.length === 1 && showingSelectionBox) {
+                const layerType = liveLayers[selectedLayersRef.current[0]].type;
+                const initialLayer = JSON.stringify(initialLayers[selectedLayersRef.current[0]]);
+                const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
+                const changed = initialLayer === liveLayer;
+                if ((layerType === LayerType.Text
+                    || layerType === LayerType.Note
+                    || layerType === LayerType.Rectangle
+                    || layerType === LayerType.Ellipse
+                    || layerType === LayerType.Rhombus
+                    || layerType === LayerType.Triangle
+                    || layerType === LayerType.Star
+                    || layerType === LayerType.Hexagon
+                    || layerType === LayerType.BigArrowLeft
+                    || layerType === LayerType.BigArrowRight
+                    || layerType === LayerType.BigArrowUp
+                    || layerType === LayerType.BigArrowDown
+                    || layerType === LayerType.CommentBubble)
+                    && changed && layerRef.current) {
+                    const layer = layerRef.current;
+                    layer.focus();
+
+                    const range = document.createRange();
+                    range.selectNodeContents(layer);
+                    range.collapse(false);
+
+                    const selection = window.getSelection();
+                    selection?.removeAllRanges();
+                    selection?.addRange(range);
+                    if (layer.value || layer.value === "") {
+                        layer.selectionStart = layer.selectionEnd = layer.value.length;
+                    }
+                }
+            }
+
+            setCanvasState({
+                mode: CanvasMode.None,
+            });
+        } else if (canvasState.mode === CanvasMode.Resizing || canvasState.mode === CanvasMode.ArrowResizeHandler) {
+            setShowingSelectionBox(true);
+            let layerIds: any = [];
+            let layerUpdates: any = [];
+            selectedLayersRef.current.forEach(id => {
+                const newLayer = liveLayers[id];
+                if (newLayer) {
+                    layerIds.push(id);
+                    layerUpdates.push(newLayer);
+                }
+            });
+
+            if (layerIds.length > 0) {
+                const command = new TranslateLayersCommand(layerIds, initialLayers, liveLayers, setLiveLayers);
+                performAction(command);
+            }
+            setCanvasState({
+                mode: CanvasMode.None,
+            });
+        } else {
+            document.body.style.cursor = 'default';
+            setCanvasState({
+                mode: CanvasMode.None,
+            });
+        }
+    },
+        [
+            setCanvasState,
+            canvasState,
+            insertLayer,
+            unselectLayers,
+            insertPath,
+            setIsPanning,
+            selectedLayersRef,
+            liveLayers,
+            camera,
+            zoom,
+            currentPreviewLayer,
+            isPanning,
+            initialLayers,
+            history,
+            layerRef,
+            layersToDeleteEraserRef.current
+        ]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
         if (
@@ -1093,7 +1127,7 @@ export const Canvas = () => {
             canvasStateRef.current.mode === CanvasMode.Eraser ||
             canvasStateRef.current.mode === CanvasMode.Laser ||
             canvasStateRef.current.mode === CanvasMode.Highlighter ||
-            e.button !== 0 
+            e.button !== 0
         ) {
             return;
         }
@@ -1204,19 +1238,19 @@ export const Canvas = () => {
             maxX = Math.max(maxX, layer.x + layer.width);
             maxY = Math.max(maxY, layer.y + layer.height);
         });
-    
+
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
-    
+
         const offsetX = mousePosition.x - centerX;
         const offsetY = mousePosition.y - centerY;
-    
+
         const prevLiveLayers = JSON.parse(localStorage.getItem("layers") || '{}');
         const prevLiveLayerIds = JSON.parse(localStorage.getItem("layerIds") || '[]');
-    
+
         const newLiveLayers = { ...liveLayers };
         const newLiveLayersId = [...liveLayersId];
-    
+
         const newSelection = [];
         copiedLayers.forEach((layer) => {
             const newId = nanoid();
@@ -1231,10 +1265,10 @@ export const Canvas = () => {
             }
             newLiveLayers[newId] = clonedLayer;
         });
-    
+
         const command = new InsertLayerCommand(newLiveLayersId, Object.values(newLiveLayers), prevLiveLayers, prevLiveLayerIds, setLiveLayers, setLiveLayersId);
         performAction(command);
-    
+
         setLiveLayers(newLiveLayers);
         setLiveLayersId(newLiveLayersId);
         localStorage.setItem("layers", JSON.stringify(newLiveLayers));
@@ -1391,9 +1425,9 @@ export const Canvas = () => {
                 e.preventDefault();
             }
         };
-    
+
         window.addEventListener('wheel', preventDefault, { passive: false });
-    
+
         return () => {
             window.removeEventListener('wheel', preventDefault);
         };
@@ -1422,26 +1456,26 @@ export const Canvas = () => {
             <SketchlieBlock />
             <BottomCanvasLinks />
             <Toolbar
-              pathColor={pathColor}
-              pathStrokeSize={pathStrokeSize}
-              setPathColor={setPathColor}
-              setPathStrokeSize={setPathStrokeSize}
-              canvasState={canvasState}
-              setCanvasState={setCanvasState}
-              undo={undo}
-              redo={redo}
-              canUndo={history.length > 0}
-              canRedo={redoStack.length > 0}
-              isPenMenuOpen={isPenMenuOpen}
-              setIsPenMenuOpen={setIsPenMenuOpen}
-              isShapesMenuOpen={isShapesMenuOpen}
-              setIsShapesMenuOpen={setIsShapesMenuOpen}
-              isPenEraserSwitcherOpen={isPenEraserSwitcherOpen}
-              setIsPenEraserSwitcherOpen={setIsPenEraserSwitcherOpen}
-              selectedTool={selectedTool}
-              setSelectedTool={setSelectedTool}  
-              setMagicPathAssist={setMagicPathAssist}
-              magicPathAssist={magicPathAssist}
+                pathColor={pathColor}
+                pathStrokeSize={pathStrokeSize}
+                setPathColor={setPathColor}
+                setPathStrokeSize={setPathStrokeSize}
+                canvasState={canvasState}
+                setCanvasState={setCanvasState}
+                undo={undo}
+                redo={redo}
+                canUndo={history.length > 0}
+                canRedo={redoStack.length > 0}
+                isPenMenuOpen={isPenMenuOpen}
+                setIsPenMenuOpen={setIsPenMenuOpen}
+                isShapesMenuOpen={isShapesMenuOpen}
+                setIsShapesMenuOpen={setIsShapesMenuOpen}
+                isPenEraserSwitcherOpen={isPenEraserSwitcherOpen}
+                setIsPenEraserSwitcherOpen={setIsPenEraserSwitcherOpen}
+                selectedTool={selectedTool}
+                setSelectedTool={setSelectedTool}
+                setMagicPathAssist={setMagicPathAssist}
+                magicPathAssist={magicPathAssist}
             />
             {canvasState.mode === CanvasMode.None && (
                 <SelectionTools
@@ -1505,7 +1539,7 @@ export const Canvas = () => {
                             style={{
                                 fill: 'rgba(59, 130, 246, 0.3)',
                                 stroke: '#3B82F6',
-                                strokeWidth: 1/zoom
+                                strokeWidth: 1 / zoom
                             }}
                             x={Math.min(canvasState.origin.x, canvasState.current.x)}
                             y={Math.min(canvasState.origin.y, canvasState.current.y)}
