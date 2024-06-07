@@ -21,6 +21,7 @@ import {
   Triangle,
   Type,
   Undo2,
+  WandSparkles,
 } from "lucide-react";
 
 import { CanvasMode, CanvasState, Color, LayerType } from "@/types/canvas";
@@ -30,6 +31,8 @@ import { Slider } from "@/components/ui/slider";
 import { ColorButton } from "./color-picker";
 import { LineIcon } from "@/public/custom-cursors/line";
 import { LaserIcon } from "@/public/custom-cursors/laser";
+import { Button } from "./ui/button";
+import { Hint } from "./hint";
 
 interface ToolbarProps {
   canvasState: CanvasState;
@@ -50,6 +53,8 @@ interface ToolbarProps {
   selectedTool: CanvasMode;
   setSelectedTool: Dispatch<SetStateAction<CanvasMode>>;
   pathColor: Color;
+  magicPathAssist: boolean;
+  setMagicPathAssist: Dispatch<SetStateAction<boolean>>;
 }
 
 export const Toolbar = ({
@@ -71,6 +76,8 @@ export const Toolbar = ({
   selectedTool,
   setSelectedTool,
   pathColor,
+  magicPathAssist,
+  setMagicPathAssist,
 }: ToolbarProps) => {
   const onPathColorChange = (color: any) => {
     setPathColor(color);
@@ -101,6 +108,7 @@ export const Toolbar = ({
     <div className="absolute h-600:top-[50%] h-600:translate-y-[-50%] h-600:bottom-auto bottom-2 h-600:left-2 h-600:translate-x-0 left-[50%] translate-x-[-50%] flex h-600:flex-col flex-row h-600:gap-y-4 h-600:gap-x-0 gap-x-4">
       <div className="bg-white rounded-md shadow-md p-1.5 flex h-600:gap-y-1 h-600:gap-x-0 gap-x-1 h-600:flex-col flex-row items-center">
         <ToolButton
+          label="Select"
           icon={MousePointer2}
           onClick={() => setCanvasState({
             mode: CanvasMode.None
@@ -114,6 +122,7 @@ export const Toolbar = ({
           }
         />
         <ToolButton
+          label="Move"
           icon={Hand}
           onClick={() => setCanvasState({
             mode: CanvasMode.Moving
@@ -123,6 +132,7 @@ export const Toolbar = ({
           }
         />
         <ToolButton
+          label={!isShapesMenuOpen ? "Shapes" : undefined}
           icon={Shapes}
           onClick={() => {
             if (!isShapesMenuOpen) {
@@ -138,6 +148,17 @@ export const Toolbar = ({
           }
         />
         <ToolButton
+          label={
+            !isPenEraserSwitcherOpen
+              ? selectedTool === CanvasMode.Pencil
+                ? "Pencil"
+                : selectedTool === CanvasMode.Eraser
+                ? "Eraser"
+                : selectedTool === CanvasMode.Highlighter
+                ? "Highlighter"
+                : "Laser"
+              : undefined
+          }
           icon={
             selectedTool === CanvasMode.Laser
               ? LaserIcon
@@ -168,6 +189,7 @@ export const Toolbar = ({
           }
         />
         <ToolButton
+          label="Arrow"
           icon={MoveUpRight}
           onClick={() => setCanvasState({
             mode: CanvasMode.Inserting,
@@ -179,6 +201,7 @@ export const Toolbar = ({
           }
         />
         <ToolButton
+          label="Note"
           icon={StickyNote}
           onClick={() => setCanvasState({
             mode: CanvasMode.Inserting,
@@ -190,6 +213,7 @@ export const Toolbar = ({
           }
         />
         <ToolButton
+          label="Text"
           icon={Type}
           onClick={() => setCanvasState({
             mode: CanvasMode.Inserting,
@@ -203,11 +227,13 @@ export const Toolbar = ({
       </div>
       <div className="bg-white rounded-md p-1.5 flex h-600:flex-col flex-row items-center shadow-md">
         <ToolButton
+          label="Undo"
           icon={Undo2}
           onClick={undo}
           isDisabled={!canUndo}
         />
         <ToolButton
+          label="Redo"
           icon={Redo2}
           onClick={redo}
           isDisabled={!canRedo}
@@ -383,7 +409,13 @@ export const Toolbar = ({
       }
       {isPenEraserSwitcherOpen && (canvasState.mode === CanvasMode.Pencil || canvasState.mode === CanvasMode.Eraser || canvasState.mode === CanvasMode.Laser || canvasState.mode === CanvasMode.Highlighter) &&
         <div className="absolute h-600:left-[115%] left-20 h-600:bottom-auto h-600:top-20 bottom-16 p-2 bg-white rounded-lg shadow-sm h-600:space-y-1 flex flex-row h-600:space-x-0 space-x-1 h-600:flex-col items-center cursor-default">
+          <Hint label="Magic Drawing" side="right" sideOffset={14}>
+            <Button className="w-10 h-10 p-2" variant={magicPathAssist ? "magicAssistActive" : "magicAssist"}>
+              <WandSparkles className="w-5 h-5" onClick={() => setMagicPathAssist(!magicPathAssist)}/>
+            </Button>
+          </Hint>
           <ToolButton
+            label="Pencil"
             icon={Pencil}
             onClick={() => {
               setSelectedTool(CanvasMode.Pencil);
@@ -395,6 +427,7 @@ export const Toolbar = ({
             isActive={selectedTool === CanvasMode.Pencil}
           />
           <ToolButton
+            label="Eraser"
             icon={Eraser}
             onClick={() => {
               setSelectedTool(CanvasMode.Eraser);
@@ -405,6 +438,7 @@ export const Toolbar = ({
             isActive={selectedTool === CanvasMode.Eraser}
           />
           <ToolButton
+            label="Highlighter"
             icon={Highlighter}
             onClick={() => {
               setSelectedTool(CanvasMode.Highlighter);
@@ -416,6 +450,7 @@ export const Toolbar = ({
             isActive={selectedTool === CanvasMode.Highlighter}
           />
           <ToolButton
+            label="Laser"
             icon={LaserIcon}
             onClick={() => {
               setSelectedTool(CanvasMode.Laser);

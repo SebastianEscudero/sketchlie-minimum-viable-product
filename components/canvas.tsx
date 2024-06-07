@@ -200,6 +200,7 @@ export const Canvas = () => {
     const [activeTouches, setActiveTouches] = useState(0);
     const [pathColor, setPathColor] = useState({ r: 29, g: 29, b: 29, a: 1 });
     const [pathStrokeSize, setPathStrokeSize] = useState(4);
+    const [magicPathAssist, setMagicPathAssist] = useState(false);
 
     useEffect(() => {
         const storedLayers = localStorage.getItem("layers");
@@ -488,7 +489,7 @@ export const Canvas = () => {
     }, [pencilDraft, liveLayers, liveLayersId]);
 
     useEffect(() => {
-        if (pencilDraft == null) {
+        if (pencilDraft == null || magicPathAssist === false) {
             return;
         }
     
@@ -537,7 +538,7 @@ export const Canvas = () => {
 
     
         return () => clearTimeout(timeoutId);
-    }, [pencilDraft, setPencilDraft, zoom]);
+    }, [pencilDraft, setPencilDraft, zoom, magicPathAssist]);
 
     const insertHighlight = useCallback(() => {
         if (
@@ -1439,6 +1440,8 @@ export const Canvas = () => {
               setIsPenEraserSwitcherOpen={setIsPenEraserSwitcherOpen}
               selectedTool={selectedTool}
               setSelectedTool={setSelectedTool}  
+              setMagicPathAssist={setMagicPathAssist}
+              magicPathAssist={magicPathAssist}
             />
             {canvasState.mode === CanvasMode.None && (
                 <SelectionTools
