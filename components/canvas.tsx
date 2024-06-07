@@ -471,7 +471,8 @@ export const Canvas = () => {
     const insertPath = useCallback(() => {
         if (
             pencilDraft == null ||
-            pencilDraft[0].length < 2
+            (pencilDraft[0] && pencilDraft[0].length < 2) ||
+            activeTouches > 1
         ) {
             setPencilDraft([[]]);
             return;
@@ -493,7 +494,7 @@ export const Canvas = () => {
         performAction(command);
 
         setCanvasState({ mode: CanvasMode.Pencil });
-    }, [pencilDraft, liveLayers, liveLayersId]);
+    }, [pencilDraft, liveLayers, liveLayersId, activeTouches]);
 
     useEffect(() => {
         if (pencilDraft == null || magicPathAssist === false) {
@@ -577,7 +578,8 @@ export const Canvas = () => {
     const insertHighlight = useCallback(() => {
         if (
             pencilDraft == null ||
-            pencilDraft.length < 2
+            (pencilDraft[0] && pencilDraft[0].length < 2) ||
+            activeTouches > 1
         ) {
             setPencilDraft([[]]);
             return;
@@ -599,17 +601,21 @@ export const Canvas = () => {
         performAction(command);
 
         setCanvasState({ mode: CanvasMode.Highlighter });
-    }, [pencilDraft, liveLayers, liveLayersId]);
+    }, [pencilDraft, liveLayers, liveLayersId, activeTouches]);
 
     const startDrawing = useCallback((point: Point, pressure: number) => {
         if (activeTouches > 1) {
             return;
         }
 
+        if (pinchStartDist !== null) {
+            return;
+        }
+
         const pencilDraft = [[point.x, point.y, pressure]];
         setPencilDraft(pencilDraft);
         localStorage.setItem("pencilDraft", JSON.stringify(pencilDraft));
-    }, [activeTouches]);
+    }, [activeTouches, pinchStartDist]);
 
     const resizeSelectedLayer = useCallback((point: Point) => {
         const layer = liveLayers[selectedLayersRef.current[0]];
