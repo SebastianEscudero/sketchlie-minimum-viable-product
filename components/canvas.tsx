@@ -3,6 +3,8 @@
 import { nanoid } from "nanoid";
 import { useCallback, useState, useEffect, useRef } from "react";
 import {
+    checkIfPathIsCircle,
+    checkIfPathIsRectangle,
     colorToCss,
     findIntersectingLayersWithPoint,
     findIntersectingLayersWithRectangle,
@@ -460,7 +462,8 @@ export const Canvas = () => {
 
     const insertPath = useCallback(() => {
         if (
-            pencilDraft == null
+            pencilDraft == null ||
+            pencilDraft[0].length < 2
         ) {
             setPencilDraft([[]]);
             return;
@@ -483,6 +486,58 @@ export const Canvas = () => {
 
         setCanvasState({ mode: CanvasMode.Pencil });
     }, [pencilDraft, liveLayers, liveLayersId]);
+
+    useEffect(() => {
+        if (pencilDraft == null) {
+            return;
+        }
+    
+        const timeoutId = setTimeout(() => {
+
+            if (pencilDraft[0].length < 2) {
+                return;
+            }
+
+            const minX = Math.min(...pencilDraft.map(point => point[0]));
+            const maxX = Math.max(...pencilDraft.map(point => point[0]));
+            const minY = Math.min(...pencilDraft.map(point => point[1]));
+            const maxY = Math.max(...pencilDraft.map(point => point[1]));
+            const width = Math.abs(maxX - minX);
+            const height = Math.abs(maxY - minY);
+            const CircleTolerance = Math.min(width/zoom, (height)/zoom)/(10/zoom)
+            const RectangleTolerance = 0.86;
+            let {isCircle, circleCheck} = checkIfPathIsCircle(pencilDraft, CircleTolerance);
+            let {isRectangle, RectangleCheck} = checkIfPathIsRectangle(pencilDraft, RectangleTolerance);
+            
+            console.log(isCircle, circleCheck, 'isCircle')
+            console.log(isRectangle, RectangleCheck, 'isRectangle')
+
+            if (isCircle || isRectangle) {
+
+                const layerType = isRectangle ? LayerType.Rectangle : LayerType.Ellipse;
+                let panX = minX;
+                let panY = minY;
+
+                if (Math.abs(mousePositionRef.current.x - minX) < Math.abs(mousePositionRef.current.x - maxX)) {
+                    panX = maxX
+                }
+
+                if (Math.abs(mousePositionRef.current.y - minY) < Math.abs(mousePositionRef.current.y - maxY)) {
+                    panY = maxY
+                }
+
+                setPencilDraft([[]]);
+                setCurrentPreviewLayer({ x: Math.min(minX, maxX), y: Math.min(minY, maxY), width, height, textFontSize: 12,  type: layerType, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 1, g: 1, b: 1, a: 1 } });
+                setStartPanPoint({ x: panX , y: panY });
+                setCanvasState({ mode: CanvasMode.Inserting, layerType: layerType });
+                setIsPanning(true);
+            }
+        }, 1000);
+
+
+    
+        return () => clearTimeout(timeoutId);
+    }, [pencilDraft, setPencilDraft, zoom]);
 
     const insertHighlight = useCallback(() => {
         if (
@@ -519,7 +574,7 @@ export const Canvas = () => {
         const pencilDraft = [[point.x, point.y, pressure]];
         setPencilDraft(pencilDraft);
         localStorage.setItem("pencilDraft", JSON.stringify(pencilDraft));
-    }, []);
+    }, [activeTouches]);
 
     const resizeSelectedLayer = useCallback((point: Point) => {
         const layer = liveLayers[selectedLayersRef.current[0]];
@@ -832,6 +887,7 @@ export const Canvas = () => {
         ]);
 
         const onPointerUp = useCallback((e: React.PointerEvent) => {    
+            
             setIsRightClickPanning(false);
             const point = pointerEventToCanvasPoint(e, camera, zoom);
             if (canvasState.mode === CanvasMode.SelectionNet) {

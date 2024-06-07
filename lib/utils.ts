@@ -1,15 +1,15 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-import { 
+import {
   ArrowHandle,
-  Camera, 
-  Color, 
-  Layer, 
-  LayerType, 
-  PathLayer, 
-  Point, 
-  Side, 
+  Camera,
+  Color,
+  Layer,
+  LayerType,
+  PathLayer,
+  Point,
+  Side,
   XYWH
 } from "@/types/canvas";
 import { toJpeg, toPng } from 'html-to-image';
@@ -66,8 +66,8 @@ export function colorToCss(color: Color) {
 
 export function resizeBounds(
   type: any,
-  bounds: XYWH, 
-  corner: Side, 
+  bounds: XYWH,
+  corner: Side,
   point: Point,
   textareaRef?: React.RefObject<HTMLTextAreaElement>,
   layer?: Layer
@@ -132,7 +132,7 @@ export function resizeBounds(
   }
 
   if (layer && Math.abs((layer?.height / layer?.width) - (result.height / result.width)) < 0.0001 && layer.height !== result.height && layer.width !== result.width
-  && textareaRef && textareaRef.current && layer.type === LayerType.Text) {
+    && textareaRef && textareaRef.current && layer.type === LayerType.Text) {
     const newFontSize = result.width / layer.width * layer.textFontSize
     result.textFontSize = newFontSize
     return result
@@ -141,13 +141,13 @@ export function resizeBounds(
   if (!isCorner && textareaRef && textareaRef.current) {
     result.height = textareaRef.current.scrollHeight;
     return result
-  } 
+  }
 
   return result;
 };
 
 export function resizeArrowBounds(
-  bounds: any, 
+  bounds: any,
   point: Point,
   handle: ArrowHandle,
 ): any {
@@ -206,7 +206,7 @@ export function findIntersectingLayersWithPoint(
   point: Point,
   zoom: number
 ) {
-  const tolerance = Math.max(4, 4/zoom);
+  const tolerance = Math.max(4, 4 / zoom);
   // Create a small rectangle around the point
   const rect = {
     x: point.x - tolerance,
@@ -266,7 +266,7 @@ export function findIntersectingLayersWithRectangle(
 
     if (layer.type === LayerType.Arrow && layer.center || layer.type === LayerType.Line && layer.center) {
       const { x, y, center, width, height } = layer;
-      
+
       const start = { x, y };
       const mid = { x: center.x, y: center.y };
       const end = { x: x + width, y: y + height };
@@ -300,11 +300,11 @@ export function findIntersectingLayersWithRectangle(
         ids.push(layerId);
       }
 
-     } else if (layer.type === LayerType.Path) {
+    } else if (layer.type === LayerType.Path) {
       for (const pathPoint of layer.points) {
         const pointX = pathPoint[0] + layer.x;
         const pointY = pathPoint[1] + layer.y;
-    
+
         // Check if the point is inside the rectangle
         if (
           pointX >= rect.x &&
@@ -321,7 +321,7 @@ export function findIntersectingLayersWithRectangle(
 
       if (
         rect.x + rect.width > x &&
-        rect.x < x + width && 
+        rect.x < x + width &&
         rect.y + rect.height > y &&
         rect.y < y + height
       ) {
@@ -388,7 +388,7 @@ export function penPointsToPathLayer(
 };
 
 function toDomPrecision(v: number) {
-	return Math.round(v * 1e4) / 1e4
+  return Math.round(v * 1e4) / 1e4
 }
 
 function average(A: number[], B: number[]): string {
@@ -438,3 +438,47 @@ export const exportToPNG = async () => {
 export const exportToSVG = async (title: string) => {
   // implement
 };
+
+export function checkIfPathIsCircle(pencilDraft: number[][], tolerance: number): {isCircle: boolean, circleCheck: number} {
+  const [minX, minY, maxX, maxY] = pencilDraft.reduce(
+    ([minX, minY, maxX, maxY], [x, y]) => [
+      Math.min(minX, x),
+      Math.min(minY, y),
+      Math.max(maxX, x),
+      Math.max(maxY, y),
+    ],
+    [Infinity, Infinity, -Infinity, -Infinity]
+  );
+
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  const radius = Math.max(maxX - minX, maxY - minY) / 2;
+
+  const distancesToCenter = pencilDraft.map(([x, y]) => Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2));
+  const maxDeviation = Math.max(...distancesToCenter.map(d => Math.abs(d - radius)));
+
+  return {isCircle: maxDeviation < tolerance, circleCheck: maxDeviation};
+}
+
+export function checkIfPathIsRectangle(pencilDraft: number[][], tolerance: number): {isRectangle: boolean, RectangleCheck: number} {
+  const [minX, minY, maxX, maxY] = pencilDraft.reduce(
+    ([minX, minY, maxX, maxY], [x, y]) => [
+      Math.min(minX, x),
+      Math.min(minY, y),
+      Math.max(maxX, x),
+      Math.max(maxY, y),
+    ],
+    [Infinity, Infinity, -Infinity, -Infinity]
+  );
+
+  const boundingBoxArea = (maxX - minX) * (maxY - minY);
+
+  const pathArea = Math.abs(pencilDraft.reduce((sum, [x1, y1], i) => {
+    const [x2, y2] = pencilDraft[(i + 1) % pencilDraft.length];
+    return sum + (x1 * y2 - x2 * y1);
+  }, 0) / 2);
+
+  const ratio = Math.abs(pathArea/boundingBoxArea);
+
+  return {isRectangle: ratio > tolerance, RectangleCheck: ratio};
+}
