@@ -510,6 +510,9 @@ export const Canvas = () => {
             let {isCircle, circleCheck} = checkIfPathIsCircle(pencilDraft, CircleTolerance);
             let {isRectangle, RectangleCheck} = checkIfPathIsRectangle(pencilDraft, RectangleTolerance);
             
+            console.log(isCircle, circleCheck, 'isCircle')
+            console.log(isRectangle, RectangleCheck, 'isRectangle')
+
             if (isCircle || isRectangle) {
 
                 const layerType = isRectangle ? LayerType.Rectangle : LayerType.Ellipse;
