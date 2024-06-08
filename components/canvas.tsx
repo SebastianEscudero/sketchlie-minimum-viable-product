@@ -203,6 +203,11 @@ export const Canvas = () => {
     const [pathStrokeSize, setPathStrokeSize] = useState(4);
     const [magicPathAssist, setMagicPathAssist] = useState(false);
     const [layerWithAssistDraw, setLayerWithAssistDraw] = useState(false);
+    const [isBackgroundGridVisible, setIsBackgroundGridVisible] = useState(() => { // used for showing/hiding the grid
+        const storedValue = localStorage.getItem('isBackgroundGridVisible');
+        return storedValue !== null ? JSON.parse(storedValue) : true;
+    });
+
 
     useEffect(() => {
         const storedLayers = localStorage.getItem("layers");
@@ -523,21 +528,21 @@ export const Canvas = () => {
     //             let panY = minY;
     //             let startX = minX;
     //             let startY = minY;
-              
+
     //             if (Math.abs(mousePositionRef.current.x - minX) < Math.abs(mousePositionRef.current.x - maxX)) {
     //               panX = maxX
     //             } else {
     //                 startX = maxX
     //             }
-              
+
     //             if (Math.abs(mousePositionRef.current.y - minY) < Math.abs(mousePositionRef.current.y - maxY)) {
     //               panY = maxY
     //             } else {
     //                 startY = maxY
     //             }
-              
+
     //             setPencilDraft([[]]);
-              
+
     //             if (layerType === LayerType.Line) {
 
     //               const width =  panX - startX
@@ -571,7 +576,7 @@ export const Canvas = () => {
     //               });
     //               setStartPanPoint({ x: panX, y: panY });
     //             }
-              
+
     //             setCanvasState({ mode: CanvasMode.Inserting, layerType: layerType });
     //             setIsPanning(true);
     //             setLayerWithAssistDraw(true);
@@ -1447,13 +1452,13 @@ export const Canvas = () => {
         <main
             className={`fixed h-full w-full bg-neutral-100 touch-none overscroll-none`}
             style={{
-                background: `
-                  linear-gradient(0deg, rgba(0,0,0,0.05) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px),
-                  #f4f4f4
-                `,
-                backgroundSize: `${65 * zoom}px ${65 * zoom}px`, // Adjust the size based on the zoom level
-                backgroundPosition: `${camera.x}px ${camera.y}px`,
+                background: isBackgroundGridVisible ? `
+                linear-gradient(0deg, rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px),
+                #f4f4f4
+            ` : '#f4f4f4',
+                backgroundSize: isBackgroundGridVisible ? `${65 * zoom}px ${65 * zoom}px` : undefined, // Adjust the size based on the zoom level
+                backgroundPosition: isBackgroundGridVisible ? `${camera.x}px ${camera.y}px` : undefined,
                 WebkitOverflowScrolling: 'touch',
                 WebkitUserSelect: 'none',
             }}
@@ -1462,6 +1467,8 @@ export const Canvas = () => {
             <Info
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
+                setIsBackgroundGridVisible={setIsBackgroundGridVisible}
+                isBackgroundGridVisible={isBackgroundGridVisible}
             />
             <SketchlieBlock />
             <BottomCanvasLinks />

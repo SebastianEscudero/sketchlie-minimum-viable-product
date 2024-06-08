@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { ArrowUpFromLine, FilePlus2 } from "lucide-react";
+import { ArrowUpFromLine, Check, ChevronRight, Eye, FilePlus2 } from "lucide-react";
 import { DropdownMenuContentProps } from "@radix-ui/react-dropdown-menu";
 
 import {
@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { exportToPNG } from "@/lib/utils";
 import { ConfirmModal } from "./confirm-delete-board";
-import { Point } from "@/types/canvas";
 
 interface ActionsProps {
     children: React.ReactNode;
@@ -20,6 +19,8 @@ interface ActionsProps {
     sideOffset?: DropdownMenuContentProps["sideOffset"];
     setLiveLayers: (layers: any) => void;
     setLiveLayersId: (layersId: string[]) => void;
+    setIsBackgroundGridVisible: (isVisible: boolean) => void;
+    isBackgroundGridVisible: boolean;
 };
 
 export const Actions = ({
@@ -28,6 +29,8 @@ export const Actions = ({
     sideOffset,
     setLiveLayers,
     setLiveLayersId,
+    setIsBackgroundGridVisible,
+    isBackgroundGridVisible,
 }: ActionsProps) => {
 
     let liveLayers = localStorage.getItem("layers");
@@ -53,8 +56,37 @@ export const Actions = ({
                 onClick={(e) => e.stopPropagation()}
                 side={side}
                 sideOffset={sideOffset}
-                className="w-60"
+                className="w-60 ml-10"
             >
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            className="p-3 cursor-pointer text-sm w-full justify-start font-semibold"
+                        >
+                            <div className="flex flex-row items-center">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                            </div>
+                            <ChevronRight className="h-4 w-4 ml-auto" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="right" sideOffset={10}>
+                        <Button
+                            variant="ghost"
+                            className="p-3 cursor-pointer text-sm w-full justify-start font-semibold"
+                            onClick={() => {
+                                setIsBackgroundGridVisible(!isBackgroundGridVisible)
+                                localStorage.setItem("isBackgroundGridVisible", JSON.stringify(!isBackgroundGridVisible))
+                            }}
+                        >
+                            {isBackgroundGridVisible && (
+                                <Check className="h-4 w-4 mr-2" />
+                            )}
+                            Show Grid
+                        </Button>
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <ConfirmModal
                     header="Crear nueva pizarra?"
                     description="Esto borrará todo el contenido de la pizarra."

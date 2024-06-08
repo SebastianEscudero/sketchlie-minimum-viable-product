@@ -21,11 +21,15 @@ const TabSeparator = () => {
 interface InfoProps {
     setLiveLayers: (layers: Layers) => void;
     setLiveLayersId: (layersId: string[]) => void;
+    setIsBackgroundGridVisible: (isVisible: boolean) => void;
+    isBackgroundGridVisible: boolean;
 }
 
 export const Info = ({
     setLiveLayersId,
     setLiveLayers,
+    setIsBackgroundGridVisible,
+    isBackgroundGridVisible,
 }: InfoProps) => {
     const [isDialogOpen, setDialogOpen] = useState(false);
     return(
@@ -49,7 +53,10 @@ export const Info = ({
             <Actions 
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
-                side="bottom" sideOffset={10}>
+                setIsBackgroundGridVisible={setIsBackgroundGridVisible}
+                isBackgroundGridVisible={isBackgroundGridVisible}
+                side="bottom" sideOffset={10}
+            >
                 <div>
                     <Hint label="Main menu" side="bottom" sideOffset={10}>
                         <Button size="icon" variant="board">
