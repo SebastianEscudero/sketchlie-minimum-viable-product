@@ -496,90 +496,90 @@ export const Canvas = () => {
         setCanvasState({ mode: CanvasMode.Pencil });
     }, [pencilDraft, liveLayers, liveLayersId, activeTouches]);
 
-    useEffect(() => {
-        if (pencilDraft == null || magicPathAssist === false) {
-            return;
-        }
+    // useEffect(() => {
+    //     if (pencilDraft == null || magicPathAssist === false) {
+    //         return;
+    //     }
 
-        const timeoutId = setTimeout(() => {
-            if (pencilDraft[0].length < 2) {
-                return;
-            }
+    //     const timeoutId = setTimeout(() => {
+    //         if (pencilDraft[0].length < 2) {
+    //             return;
+    //         }
 
-            const minX = Math.min(...pencilDraft.map(point => point[0]));
-            const maxX = Math.max(...pencilDraft.map(point => point[0]));
-            const minY = Math.min(...pencilDraft.map(point => point[1]));
-            const maxY = Math.max(...pencilDraft.map(point => point[1]));
-            const CircleTolerance = 0.30;
-            const RectangleTolerance = 0.80;
-            const LineTolerance = 20;
-            const triangleTolerance = 0.80;
+    //         const minX = Math.min(...pencilDraft.map(point => point[0]));
+    //         const maxX = Math.max(...pencilDraft.map(point => point[0]));
+    //         const minY = Math.min(...pencilDraft.map(point => point[1]));
+    //         const maxY = Math.max(...pencilDraft.map(point => point[1]));
+    //         const CircleTolerance = 0.30;
+    //         const RectangleTolerance = 0.80;
+    //         const LineTolerance = 20;
+    //         const triangleTolerance = 0.80;
 
-            const layerType = getShapeType(pencilDraft, CircleTolerance, RectangleTolerance, LineTolerance, triangleTolerance);
+    //         const layerType = getShapeType(pencilDraft, CircleTolerance, RectangleTolerance, LineTolerance, triangleTolerance);
 
-            if (layerType !== LayerType.Path) {
+    //         if (layerType !== LayerType.Path) {
 
-                let panX = minX;
-                let panY = minY;
-                let startX = minX;
-                let startY = minY;
+    //             let panX = minX;
+    //             let panY = minY;
+    //             let startX = minX;
+    //             let startY = minY;
               
-                if (Math.abs(mousePositionRef.current.x - minX) < Math.abs(mousePositionRef.current.x - maxX)) {
-                  panX = maxX
-                } else {
-                    startX = maxX
-                }
+    //             if (Math.abs(mousePositionRef.current.x - minX) < Math.abs(mousePositionRef.current.x - maxX)) {
+    //               panX = maxX
+    //             } else {
+    //                 startX = maxX
+    //             }
               
-                if (Math.abs(mousePositionRef.current.y - minY) < Math.abs(mousePositionRef.current.y - maxY)) {
-                  panY = maxY
-                } else {
-                    startY = maxY
-                }
+    //             if (Math.abs(mousePositionRef.current.y - minY) < Math.abs(mousePositionRef.current.y - maxY)) {
+    //               panY = maxY
+    //             } else {
+    //                 startY = maxY
+    //             }
               
-                setPencilDraft([[]]);
+    //             setPencilDraft([[]]);
               
-                if (layerType === LayerType.Line) {
+    //             if (layerType === LayerType.Line) {
 
-                  const width =  panX - startX
-                  const height = panY - startY
+    //               const width =  panX - startX
+    //               const height = panY - startY
 
-                  setCurrentPreviewLayer({
-                    type: LayerType.Line,
-                    x: startX,
-                    y: startY,
-                    center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
-                    height,
-                    width,
-                    fill: { r: 0, g: 0, b: 0, a: 0 },
-                  });
+    //               setCurrentPreviewLayer({
+    //                 type: LayerType.Line,
+    //                 x: startX,
+    //                 y: startY,
+    //                 center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
+    //                 height,
+    //                 width,
+    //                 fill: { r: 0, g: 0, b: 0, a: 0 },
+    //               });
 
-                  setStartPanPoint({ x: startX, y: startY });
-                } else {
+    //               setStartPanPoint({ x: startX, y: startY });
+    //             } else {
 
-                  const width = Math.abs(maxX - minX);
-                  const height = Math.abs(maxY - minY);
+    //               const width = Math.abs(maxX - minX);
+    //               const height = Math.abs(maxY - minY);
 
-                  setCurrentPreviewLayer({
-                    x: Math.min(minX, maxX),
-                    y: Math.min(minY, maxY),
-                    width,
-                    height,
-                    textFontSize: 12,
-                    type: layerType,
-                    fill: { r: 0, g: 0, b: 0, a: 0 },
-                    outlineFill: { r: 1, g: 1, b: 1, a: 1 },
-                  });
-                  setStartPanPoint({ x: panX, y: panY });
-                }
+    //               setCurrentPreviewLayer({
+    //                 x: Math.min(minX, maxX),
+    //                 y: Math.min(minY, maxY),
+    //                 width,
+    //                 height,
+    //                 textFontSize: 12,
+    //                 type: layerType,
+    //                 fill: { r: 0, g: 0, b: 0, a: 0 },
+    //                 outlineFill: { r: 1, g: 1, b: 1, a: 1 },
+    //               });
+    //               setStartPanPoint({ x: panX, y: panY });
+    //             }
               
-                setCanvasState({ mode: CanvasMode.Inserting, layerType: layerType });
-                setIsPanning(true);
-                setLayerWithAssistDraw(true);
-              }
-        }, 1000);
+    //             setCanvasState({ mode: CanvasMode.Inserting, layerType: layerType });
+    //             setIsPanning(true);
+    //             setLayerWithAssistDraw(true);
+    //           }
+    //     }, 1000);
 
-        return () => clearTimeout(timeoutId);
-    }, [pencilDraft, setPencilDraft, zoom, magicPathAssist]);
+    //     return () => clearTimeout(timeoutId);
+    // }, [pencilDraft, setPencilDraft, zoom, magicPathAssist]);
 
     const insertHighlight = useCallback(() => {
         if (
@@ -610,18 +610,15 @@ export const Canvas = () => {
     }, [pencilDraft, liveLayers, liveLayersId, activeTouches]);
 
     const startDrawing = useCallback((point: Point, pressure: number) => {
-        if (activeTouches > 1) {
-            return;
-        }
 
-        if (pinchStartDist !== null) {
+        if (activeTouches > 1) {
             return;
         }
 
         const pencilDraft = [[point.x, point.y, pressure]];
         setPencilDraft(pencilDraft);
         localStorage.setItem("pencilDraft", JSON.stringify(pencilDraft));
-    }, [activeTouches, pinchStartDist]);
+    }, [activeTouches]);
 
     const resizeSelectedLayer = useCallback((point: Point) => {
         const layer = liveLayers[selectedLayersRef.current[0]];
@@ -789,6 +786,7 @@ export const Canvas = () => {
         e.preventDefault();
 
         if (activeTouches > 1) {
+            setPencilDraft([[]]);
             return;
         }
 
