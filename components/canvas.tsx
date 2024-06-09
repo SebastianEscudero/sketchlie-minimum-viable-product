@@ -13,6 +13,7 @@ import {
     pointerEventToCanvasPoint,
     resizeArrowBounds,
     resizeBounds,
+    resizePathLayer,
 } from "@/lib/utils";
 import {
     ArrowHandle,
@@ -639,6 +640,13 @@ export const Canvas = () => {
                     layerRef,
                     layer,
                 );
+            } else if (layer.type === LayerType.Path) {
+                bounds = resizePathLayer(
+                    canvasState.initialBounds,
+                    canvasState.corner,
+                    point,
+                    layer,
+                )
             } else {
                 bounds = resizeBounds(
                     layer?.type,
@@ -713,12 +721,19 @@ export const Canvas = () => {
         const isMouseWheel = Math.abs(e.deltaY) % 100 === 0 && e.deltaX === 0;
 
         if (isMouseWheel || e.ctrlKey) {
+
+            let ZoomMultiplier = 1.15
+
+            if (e.ctrlKey && isMouseWheel === false) { // mac zoom in is stronger so multiplier will be smaller 
+                ZoomMultiplier = 1.06
+            }
+
             // Zooming
             let newZoom = zoom;
             if (e.deltaY < 0) {
-                newZoom = Math.min(zoom * 1.15, 13);
+                newZoom = Math.min(zoom * ZoomMultiplier, 13);
             } else {
-                newZoom = Math.max(zoom / 1.15, 0.3);
+                newZoom = Math.max(zoom / ZoomMultiplier, 0.3);
             }
 
             const zoomFactor = newZoom / zoom;
