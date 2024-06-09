@@ -627,29 +627,30 @@ export const Canvas = () => {
     }, [activeTouches]);
 
     const resizeSelectedLayer = useCallback((point: Point) => {
-        const layer = liveLayers[selectedLayersRef.current[0]];
+
+        const newLayer = { ...liveLayers[selectedLayersRef.current[0]] };
         let bounds
 
         if (canvasState.mode === CanvasMode.Resizing) {
-            if (layer.type === LayerType.Text) {
+            if (newLayer.type === LayerType.Text) {
                 bounds = resizeBounds(
-                    layer?.type,
+                    newLayer?.type,
                     canvasState.initialBounds,
                     canvasState.corner,
                     point,
                     layerRef,
-                    layer,
+                    newLayer,
                 );
-            } else if (layer.type === LayerType.Path) {
+            } else if (newLayer.type === LayerType.Path) {
                 bounds = resizePathLayer(
                     canvasState.initialBounds,
                     canvasState.corner,
                     point,
-                    layer,
+                    newLayer,
                 )
             } else {
                 bounds = resizeBounds(
-                    layer?.type,
+                    newLayer?.type,
                     canvasState.initialBounds,
                     canvasState.corner,
                     point,
@@ -665,8 +666,7 @@ export const Canvas = () => {
             return;
         }
 
-        if (layer) {
-            const newLayer = { ...layer }; // Create a new object instead of modifying the existing one
+        if (newLayer) {
             if (newLayer.type === LayerType.Note
                 || newLayer.type === LayerType.Rectangle
                 || newLayer.type === LayerType.Ellipse
