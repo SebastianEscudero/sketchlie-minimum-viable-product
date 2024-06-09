@@ -687,7 +687,6 @@ export const Canvas = () => {
             Object.assign(newLayer, bounds);
             liveLayers[selectedLayersRef.current[0]] = newLayer;
             setLiveLayers({ ...liveLayers });
-            localStorage.setItem("layers", JSON.stringify(liveLayers));
         }
     }, [canvasState, liveLayers, selectedLayersRef, layerRef]);
 
