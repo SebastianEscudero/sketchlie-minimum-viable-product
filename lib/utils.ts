@@ -78,24 +78,153 @@ export function resizeBounds(
     height: bounds.height,
   };
 
-  if ((corner & Side.Left) === Side.Left) {
-    result.x = Math.min(point.x, bounds.x + bounds.width);
-    result.width = Math.abs(bounds.x + bounds.width - point.x);
-  }
+  const aspectRatio = bounds.width / bounds.height;
 
-  if ((corner & Side.Right) === Side.Right) {
+  if (corner === Side.Right) {
     result.x = Math.min(point.x, bounds.x);
     result.width = Math.abs(point.x - bounds.x);
+    if (maintainAspectRatio) {
+      result.height = result.width / aspectRatio;
+    }
   }
 
-  if ((corner & Side.Top) === Side.Top) {
-    result.y = Math.min(point.y, bounds.y + bounds.height);
-    result.height = Math.abs(bounds.y + bounds.height - point.y);
+  if (corner === Side.Top) {
+      result.y = Math.min(point.y, bounds.y + bounds.height);
+      result.height = Math.abs(bounds.y + bounds.height - point.y);
+      if (maintainAspectRatio) {
+        result.width = result.height * aspectRatio;
+      }
+    }
+
+  if (corner === Side.Left) {
+    result.x = Math.min(point.x, bounds.x + bounds.width);
+    result.width = Math.abs(bounds.x + bounds.width - point.x);
+    if (maintainAspectRatio) {
+      result.height = result.width / aspectRatio;
+    }
   }
 
-  if ((corner & Side.Bottom) === Side.Bottom) {
+  if (corner === Side.Bottom) {
     result.y = Math.min(point.y, bounds.y);
     result.height = Math.abs(point.y - bounds.y);
+    if (maintainAspectRatio) {
+      result.width = result.height * aspectRatio;
+    }
+  }
+
+  if (corner === Side.Top + Side.Left) {
+    const oldWidth = bounds.x + bounds.width - point.x;
+    const oldHeight = bounds.y + bounds.height - point.y;
+    if (maintainAspectRatio) {
+      const newWidth = oldHeight * aspectRatio;
+      const newHeight = oldWidth / aspectRatio;
+      if (newWidth > oldWidth) {
+        result.width = newWidth;
+        result.height = oldHeight;
+      } else {
+        result.width = oldWidth;
+        result.height = newHeight;
+      }
+    } else {
+      result.width = oldWidth;
+      result.height = oldHeight;
+    }
+    result.x = bounds.x + bounds.width - result.width;
+    result.y = bounds.y + bounds.height - result.height;
+
+    if (result.width < 0) {
+      result.width = -result.width;
+      result.x -= result.width;
+    }
+  }
+
+  if (corner === Side.Top + Side.Right) {
+    const oldWidth = point.x - bounds.x;
+    const oldHeight = bounds.y + bounds.height - point.y;
+    if (maintainAspectRatio) {
+      const newWidth = oldHeight * aspectRatio;
+      const newHeight = oldWidth / aspectRatio;
+      if (newWidth > oldWidth) {
+        result.width = newWidth;
+        result.height = oldHeight;
+      } else {
+        result.width = oldWidth;
+        result.height = newHeight;
+      }
+    } else {
+      result.width = oldWidth;
+      result.height = oldHeight;
+    }
+    result.y = bounds.y + bounds.height - result.height;
+  
+    if (result.width < 0) {
+      result.width = -result.width;
+      result.x -= result.width;
+    }
+
+    if (result.height < 0) {
+      result.height = -result.height;
+      result.y -= result.height;
+    }
+  }
+
+  if (corner === Side.Bottom + Side.Left) {
+    const oldWidth = bounds.x + bounds.width - point.x;
+    const oldHeight = point.y - bounds.y;
+    if (maintainAspectRatio) {
+      const newWidth = oldHeight * aspectRatio;
+      const newHeight = oldWidth / aspectRatio;
+      if (newWidth > oldWidth) {
+        result.width = newWidth;
+        result.height = oldHeight;
+      } else {
+        result.width = oldWidth;
+        result.height = newHeight;
+      }
+    } else {
+      result.width = oldWidth;
+      result.height = oldHeight;
+    }
+    result.x = bounds.x + bounds.width - result.width;
+  
+    if (result.width < 0) {
+      result.width = -result.width;
+      result.x -= result.width;
+    }
+
+    if (result.height < 0) {
+      result.height = -result.height;
+      result.y -= result.height;
+    }
+  }
+  
+  if (corner === Side.Bottom + Side.Right) {
+    const oldWidth = point.x - bounds.x;
+    const oldHeight = point.y - bounds.y;
+    if (maintainAspectRatio) {
+      const newWidth = oldHeight * aspectRatio;
+      const newHeight = oldWidth / aspectRatio;
+      if (newWidth > oldWidth) {
+        result.width = newWidth;
+        result.height = oldHeight;
+      } else {
+        result.width = oldWidth;
+        result.height = newHeight;
+      }
+    } else {
+      result.width = oldWidth;
+      result.height = oldHeight;
+    }
+  
+    if (result.width < 0) {
+      result.width = -result.width;
+      result.x -= result.width;
+    }
+  
+    if (result.height < 0) {
+      result.height = -result.height;
+      result.y -= result.height;
+    }
   }
 
   return result;
@@ -652,6 +781,7 @@ export function resizeBox(
   newLayer: Layer,
   corner: Side,
   textareaRef?: React.RefObject<HTMLTextAreaElement>,
+  singleLayer?: boolean,
 ) {
   const isCorner = corner === (Side.Top + Side.Left) || corner === (Side.Top + Side.Right) || corner === (Side.Bottom + Side.Left) || corner === (Side.Bottom + Side.Right);
 
@@ -718,11 +848,9 @@ export function resizeBox(
     bounds.textFontSize = newFontSize
   }
 
-  if (!isCorner && textareaRef && textareaRef.current && newLayer.type === LayerType.Text) {
+  if (!isCorner && textareaRef && textareaRef.current && newLayer.type === LayerType.Text && singleLayer) {
     bounds.height = textareaRef.current.scrollHeight;
   }
-
-  console.log(width, height);
 
   return bounds
 }

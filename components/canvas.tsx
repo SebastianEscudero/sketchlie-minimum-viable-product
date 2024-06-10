@@ -633,6 +633,7 @@ export const Canvas = () => {
         let bounds: any;
         let hasImageOrText = selectedLayersRef.current.some(id => liveLayers[id].type === LayerType.Image || liveLayers[id].type === LayerType.Text);
         let mantainAspectRatio = hasImageOrText
+        let singleLayer = selectedLayersRef.current.length === 1
 
         selectedLayersRef.current.forEach(id => {
             const newLayer = { ...liveLayers[id] };
@@ -646,7 +647,7 @@ export const Canvas = () => {
                 );
 
                 if (newLayer.type === LayerType.Text) {
-                    bounds = resizeBox(initialBoundingBox, newBoundingBox, newLayer, canvasState.corner, layerRef);
+                    bounds = resizeBox(initialBoundingBox, newBoundingBox, newLayer, canvasState.corner, layerRef, singleLayer);
                 } else {
                     bounds = resizeBox(initialBoundingBox, newBoundingBox, newLayer, canvasState.corner);
                 }
