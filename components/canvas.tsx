@@ -3,6 +3,7 @@
 import { nanoid } from "nanoid";
 import { useCallback, useState, useEffect, useRef } from "react";
 import {
+    calculateBoundingBox,
     checkIfPathIsEllipse,
     checkIfPathIsRectangle,
     colorToCss,
@@ -13,6 +14,7 @@ import {
     pointerEventToCanvasPoint,
     resizeArrowBounds,
     resizeBounds,
+    resizeBox,
     resizePathLayer,
 } from "@/lib/utils";
 import {
@@ -627,69 +629,42 @@ export const Canvas = () => {
     }, [activeTouches]);
 
     const resizeSelectedLayer = useCallback((point: Point) => {
+        const initialBoundingBox = calculateBoundingBox(selectedLayersRef.current.map(id => liveLayers[id]));
+        let bounds: any;
+        let hasImageOrText = selectedLayersRef.current.some(id => liveLayers[id].type === LayerType.Image || liveLayers[id].type === LayerType.Text);
+        let mantainAspectRatio = hasImageOrText
 
-        const newLayer = { ...liveLayers[selectedLayersRef.current[0]] };
-        let bounds
-
-        if (canvasState.mode === CanvasMode.Resizing) {
-            if (newLayer.type === LayerType.Text) {
-                bounds = resizeBounds(
-                    newLayer?.type,
+        selectedLayersRef.current.forEach(id => {
+            const newLayer = { ...liveLayers[id] };
+    
+            if (canvasState.mode === CanvasMode.Resizing) {
+                const newBoundingBox = resizeBounds(
                     canvasState.initialBounds,
                     canvasState.corner,
                     point,
-                    layerRef,
-                    newLayer,
+                    mantainAspectRatio
                 );
-            } else if (newLayer.type === LayerType.Path) {
-                bounds = resizePathLayer(
+
+                if (newLayer.type === LayerType.Text) {
+                    bounds = resizeBox(initialBoundingBox, newBoundingBox, newLayer, canvasState.corner, layerRef);
+                } else {
+                    bounds = resizeBox(initialBoundingBox, newBoundingBox, newLayer, canvasState.corner);
+                }
+
+            } else if (canvasState.mode === CanvasMode.ArrowResizeHandler) {
+                bounds = resizeArrowBounds(
                     canvasState.initialBounds,
-                    canvasState.corner,
                     point,
-                    newLayer,
-                )
-            } else {
-                bounds = resizeBounds(
-                    newLayer?.type,
-                    canvasState.initialBounds,
-                    canvasState.corner,
-                    point,
+                    canvasState.handle,
                 );
             }
-        } else if (canvasState.mode === CanvasMode.ArrowResizeHandler) {
-            bounds = resizeArrowBounds(
-                canvasState.initialBounds,
-                point,
-                canvasState.handle,
-            );
-        } else {
-            return;
-        }
-
-        if (newLayer) {
-            if (newLayer.type === LayerType.Note
-                || newLayer.type === LayerType.Rectangle
-                || newLayer.type === LayerType.Ellipse
-                || newLayer.type === LayerType.Rhombus
-                || newLayer.type === LayerType.Triangle
-                || newLayer.type === LayerType.Star
-                || newLayer.type === LayerType.Hexagon
-                || newLayer.type === LayerType.BigArrowLeft
-                || newLayer.type === LayerType.BigArrowRight
-                || newLayer.type === LayerType.BigArrowUp
-                || newLayer.type === LayerType.BigArrowDown
-                || newLayer.type === LayerType.CommentBubble
-            ) {
-                bounds.textFontSize = newLayer.textFontSize;
-            } else if (newLayer.type === LayerType.Arrow) {
-                newLayer.center = bounds.center;
-            }
+    
             Object.assign(newLayer, bounds);
-            liveLayers[selectedLayersRef.current[0]] = newLayer;
-            setLiveLayers({ ...liveLayers });
-        }
+            liveLayers[id] = newLayer;
+        })
+        setLiveLayers({ ...liveLayers });
     }, [canvasState, liveLayers, selectedLayersRef, layerRef]);
-
+    
     const onResizeHandlePointerDown = useCallback((
         corner: Side,
         initialBounds: XYWH,
