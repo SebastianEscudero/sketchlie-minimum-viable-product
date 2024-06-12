@@ -785,16 +785,19 @@ export const Canvas = () => {
             return;
         }
 
-        if (rightClickPanning) {
+        if (rightClickPanning || e.buttons === 2 || e.buttons === 4) {
             const newCameraPosition = {
                 x: camera.x + e.clientX - startPanPoint.x,
                 y: camera.y + e.clientY - startPanPoint.y,
             };
             setCamera(newCameraPosition);
-            localStorage.setItem("camera", JSON.stringify(newCameraPosition));
             setStartPanPoint({ x: e.clientX, y: e.clientY });
-        }
 
+            if (!rightClickPanning) {
+                setIsRightClickPanning(true);
+            }
+            return;
+        }
         if (canvasState.mode === CanvasMode.Moving && isPanning) {
             const newCameraPosition = {
                 x: camera.x + e.clientX - startPanPoint.x,
@@ -1017,6 +1020,20 @@ export const Canvas = () => {
             document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
             setIsPanning(false);
         } else if (canvasState.mode === CanvasMode.Translating) {
+            const initialLayer = JSON.stringify(initialLayers[selectedLayersRef.current[0]]);
+            const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
+            const changed = initialLayer !== liveLayer;
+
+            if (!changed) {
+                setCanvasState({ mode: CanvasMode.None });
+                const intersectingLayers = findIntersectingLayersWithPoint(liveLayersId, liveLayers, point, zoom);
+                const id = intersectingLayers[intersectingLayers.length - 1];
+                if (selectedLayersRef.current.includes(id)) {
+                    selectedLayersRef.current = [id];
+                    return;
+                }
+            }
+
             let layerIds: any = [];
             let layerUpdates: any = [];
             selectedLayersRef.current.forEach(id => {
@@ -1041,7 +1058,7 @@ export const Canvas = () => {
             }
 
             setShowingSelectionBox(true);
-            if (selectedLayersRef.current.length === 1 && showingSelectionBox) {
+            if (selectedLayersRef.current.length === 1 && showingSelectionBox && e.button === 0) {
                 const layerType = liveLayers[selectedLayersRef.current[0]].type;
                 const initialLayer = JSON.stringify(initialLayers[selectedLayersRef.current[0]]);
                 const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
@@ -1284,6 +1301,9 @@ export const Canvas = () => {
         const onPointerDown = (e: PointerEvent) => {
             const deepCopy = JSON.parse(JSON.stringify(liveLayers));
             setInitialLayers(deepCopy);
+            if (e.buttons === 2 || e.buttons === 4) {
+                setStartPanPoint({ x: e.clientX, y: e.clientY });
+            }
         }
 
         document.addEventListener('pointerdown', onPointerDown);
@@ -1404,10 +1424,12 @@ export const Canvas = () => {
             document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
         } else if (canvasState.mode === CanvasMode.ArrowResizeHandler) {
             document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
+        } else if (rightClickPanning) {
+            document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
         } else {
             document.body.style.cursor = 'default';
         }
-    }, [canvasState.mode, canvasState]);
+    }, [canvasState.mode, canvasState, rightClickPanning]);
 
     useEffect(() => { // for on layer pointer down to update refts
         canvasStateRef.current = canvasState;
