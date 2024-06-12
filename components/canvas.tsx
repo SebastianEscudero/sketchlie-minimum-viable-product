@@ -172,6 +172,7 @@ if (typeof window !== 'undefined') {
 }
 
 export const Canvas = () => {
+    const [isMoving, setIsMoving] = useState(false);
     const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
     const [isShapesMenuOpen, setIsShapesMenuOpen] = useState(false);
     const [isPenEraserSwitcherOpen, setIsPenEraserSwitcherOpen] = useState(false);
@@ -778,12 +779,13 @@ export const Canvas = () => {
     }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches, isPanning]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
-        e.preventDefault();
-
+        e.preventDefault();        
         if (activeTouches > 1) {
             setPencilDraft([[]]);
             return;
         }
+
+        setIsMoving(false);
 
         if (rightClickPanning || e.buttons === 2 || e.buttons === 4) {
             const newCameraPosition = {
@@ -816,6 +818,7 @@ export const Canvas = () => {
         } else if (canvasState.mode === CanvasMode.Eraser && e.buttons === 1) {
             EraserDeleteLayers(current);
         } else if (canvasState.mode === CanvasMode.Translating) {
+            setIsMoving(true);
             translateSelectedLayers(current);
         } else if (canvasState.mode === CanvasMode.Resizing) {
             resizeSelectedLayer(current);
@@ -1506,7 +1509,7 @@ export const Canvas = () => {
                 setMagicPathAssist={setMagicPathAssist}
                 magicPathAssist={magicPathAssist}
             />
-            {canvasState.mode === CanvasMode.None && (
+            {!isMoving && canvasState.mode !== CanvasMode.Resizing && (
                 <SelectionTools
                     setLiveLayerIds={setLiveLayersId}
                     setLiveLayers={setLiveLayers}
@@ -1552,7 +1555,7 @@ export const Canvas = () => {
                             layer={currentPreviewLayer}
                         />
                     )}
-                    {(canvasState.mode === CanvasMode.SelectionNet || canvasState.mode === CanvasMode.None || canvasState.mode === CanvasMode.Resizing) && activeTouches < 2 && (
+                    {!isMoving && activeTouches < 2 && (
                         <SelectionBox
                             zoom={zoom}
                             liveLayers={liveLayers}
