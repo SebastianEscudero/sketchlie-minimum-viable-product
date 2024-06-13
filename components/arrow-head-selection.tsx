@@ -22,7 +22,6 @@ export const ArrowHeadSelection = ({
 
     const handleArrowHeadChange = (newArrowHead: ArrowHead) => {
         const newLayers = { ...liveLayers };
-        const updatedIds: any = [];
         const updatedLayers: any = [];
 
         selectedLayers.map((layerId: string) => {
@@ -33,7 +32,6 @@ export const ArrowHeadSelection = ({
                 newLayers[layerId] = { ...layer, endArrowHead: newArrowHead };
             }
 
-            updatedIds.push(layerId);
             updatedLayers.push({
                 startArrowHead: newLayers[layerId].startArrowHead,
                 endArrowHead: newLayers[layerId].endArrowHead,
