@@ -49,9 +49,19 @@ export function pointerEventToCanvasPoint(
   camera: Camera,
   zoom: number,
 ) {
+  let clientX, clientY;
+
+  if (e.type === "touchstart") {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+
   return {
-    x: (Math.round(e.clientX) - camera.x) / zoom,
-    y: (Math.round(e.clientY) - camera.y) / zoom,
+    x: (Math.round(clientX) - camera.x) / zoom,
+    y: (Math.round(clientY) - camera.y) / zoom,
   };
 };
 
@@ -133,9 +143,15 @@ export function resizeBounds(
     result.y = bounds.y + bounds.height - result.height;
 
     if (result.width < 0) {
-      result.width = -result.width;
+      result.width = Math.abs(result.width);
       result.x -= result.width;
     }
+
+    if (result.height < 0) {
+      result.height = Math.abs(result.height);
+      result.y -= result.height;
+    }
+
   }
 
   if (corner === Side.Top + Side.Right) {
@@ -158,12 +174,12 @@ export function resizeBounds(
     result.y = bounds.y + bounds.height - result.height;
   
     if (result.width < 0) {
-      result.width = -result.width;
+      result.width = Math.abs(result.width);
       result.x -= result.width;
     }
 
     if (result.height < 0) {
-      result.height = -result.height;
+      result.height = Math.abs(result.height);
       result.y -= result.height;
     }
   }
@@ -188,12 +204,12 @@ export function resizeBounds(
     result.x = bounds.x + bounds.width - result.width;
   
     if (result.width < 0) {
-      result.width = -result.width;
+      result.width = Math.abs(result.width);
       result.x -= result.width;
     }
 
     if (result.height < 0) {
-      result.height = -result.height;
+      result.height = Math.abs(result.height);
       result.y -= result.height;
     }
   }
@@ -217,12 +233,12 @@ export function resizeBounds(
     }
   
     if (result.width < 0) {
-      result.width = -result.width;
+      result.width = Math.abs(result.width);
       result.x -= result.width;
     }
   
     if (result.height < 0) {
-      result.height = -result.height;
+      result.height = Math.abs(result.height);
       result.y -= result.height;
     }
   }
@@ -853,4 +869,11 @@ export function resizeBox(
   }
 
   return bounds
+}
+
+export function removeHighlightFromText() {
+  const selection = window.getSelection();
+  if (selection && selection.rangeCount > 0) {
+    selection.removeAllRanges();
+  }
 }
