@@ -12,6 +12,7 @@ import { OutlineColorPicker } from "./outline-color-picker";
 import { ArrowHeadSelection } from "./arrow-head-selection";
 import { PathStokeSizeSelection } from "./stroke-size-selection";
 import { customAlphabet } from "nanoid";
+import { TextJustifySelector } from "./text-justify-selector";
 
 interface SelectionToolsProps {
   camera: Camera;
@@ -292,6 +293,13 @@ const deleteLayers = useCallback(() => {
       )}
       {hasText && (
         <FontSizePicker
+          selectedLayers={selectedLayers}
+          setLiveLayers={setLiveLayers}
+          liveLayers={liveLayers}
+        />
+      )}
+      {hasText && (
+        <TextJustifySelector
           selectedLayers={selectedLayers}
           setLiveLayers={setLiveLayers}
           liveLayers={liveLayers}

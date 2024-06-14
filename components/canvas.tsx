@@ -12,6 +12,7 @@ import {
     getShapeType,
     penPointsToPathLayer,
     pointerEventToCanvasPoint,
+    removeHighlightFromText,
     resizeArrowBounds,
     resizeBounds,
     resizeBox,
@@ -173,11 +174,11 @@ if (typeof window !== 'undefined') {
 
 export const Canvas = () => {
     const [isMoving, setIsMoving] = useState(false);
+    const [justChanged, setJustChanged] = useState(false);
     const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
     const [isShapesMenuOpen, setIsShapesMenuOpen] = useState(false);
     const [isPenEraserSwitcherOpen, setIsPenEraserSwitcherOpen] = useState(false);
     const [selectedTool, setSelectedTool] = useState(CanvasMode.None);
-    const [showingSelectionBox, setShowingSelectionBox] = useState(false);
     const [initialLayers, setInitialLayers] = useState<Layers>({}); // used for undo/redo
     const [history, setHistory] = useState<Command[]>([]);
     const [redoStack, setRedoStack] = useState<Command[]>([]);
@@ -275,7 +276,8 @@ export const Canvas = () => {
                 width: width,
                 fill: { r: 29, g: 29, b: 29, a: 1 },
                 textFontSize: 12,
-                outlineFill: null
+                outlineFill: null,
+                alignX: 'left',
             };
         } else if (layerType === LayerType.Note) {
             layer = {
@@ -287,6 +289,8 @@ export const Canvas = () => {
                 fill: fillColor,
                 outlineFill: { r: 0, g: 0, b: 0, a: 0 },
                 textFontSize: 12,
+                alignX: 'center',
+                alignY: 'center',
             };
         } else if (layerType === LayerType.Arrow) {
             layer = {
@@ -324,6 +328,8 @@ export const Canvas = () => {
                 fill: fillColor,
                 outlineFill: { r: 29, g: 29, b: 29, a: 1 },
                 textFontSize: 12,
+                alignX: 'center',
+                alignY: 'center',
             };
         }
         const newLayers = { ...liveLayers, [layerId]: layer };
@@ -341,7 +347,6 @@ export const Canvas = () => {
 
         localStorage.setItem("layerIds", JSON.stringify(newLayerIds));
         localStorage.setItem("layers", JSON.stringify(newLayers));
-        setShowingSelectionBox(true);
 
         if (layerWithAssistDraw) {
             setLayerWithAssistDraw(false);
@@ -349,6 +354,7 @@ export const Canvas = () => {
         } else {
             setCanvasState({ mode: CanvasMode.None });
         }
+        
     }, [liveLayers, liveLayersId, selectedLayersRef, layerWithAssistDraw]);
 
     const translateSelectedLayers = useCallback((point: Point) => {
@@ -736,11 +742,25 @@ export const Canvas = () => {
         e: React.PointerEvent,
     ) => {
 
+        const bounds = calculateBoundingBox(selectedLayersRef.current.map(id => liveLayers[id]));
+        const point = pointerEventToCanvasPoint(e, camera, zoom);
+
+        if (point && bounds) {
+            if (point.x > bounds.x &&
+                point.x < bounds.x + bounds.width &&
+                point.y > bounds.y &&
+                point.y < bounds.y + bounds.height) {
+                setCanvasState({ mode: CanvasMode.Translating, current: point });
+                return;
+            }
+        }
+
+        removeHighlightFromText();        
+        unselectLayers();
+
         if (activeTouches > 1) {
             return;
         }
-
-        const point = pointerEventToCanvasPoint(e, camera, zoom);
 
         if (e.button === 0 && !isPanning) {
             if (canvasState.mode === CanvasMode.Eraser) {
@@ -776,7 +796,7 @@ export const Canvas = () => {
             setStartPanPoint({ x: e.clientX, y: e.clientY });
             document.body.style.cursor = 'url(/custom-cursors/grab.svg) 8 8, auto';
         }
-    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches, isPanning]);
+    }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches, isPanning, unselectLayers, liveLayers]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         e.preventDefault();        
@@ -822,6 +842,7 @@ export const Canvas = () => {
             translateSelectedLayers(current);
         } else if (canvasState.mode === CanvasMode.Resizing) {
             resizeSelectedLayer(current);
+            removeHighlightFromText();
         } else if (canvasState.mode === CanvasMode.ArrowResizeHandler) {
             resizeSelectedLayer(current);
         } else if (canvasState.mode === CanvasMode.Pencil && e.buttons === 1 || canvasState.mode === CanvasMode.Laser && e.buttons === 1 || canvasState.mode === CanvasMode.Highlighter && e.buttons === 1) {
@@ -936,24 +957,13 @@ export const Canvas = () => {
 
         setIsRightClickPanning(false);
         const point = pointerEventToCanvasPoint(e, camera, zoom);
-        if (canvasState.mode === CanvasMode.SelectionNet) {
-            if (selectedLayersRef.current.length > 0) {
-                setShowingSelectionBox(true);
-            } else {
-                setShowingSelectionBox(false);
-            }
-        }
 
-        if (canvasState.mode !== CanvasMode.Translating && canvasState.mode !== CanvasMode.SelectionNet) {
-            setShowingSelectionBox(false)
-        }
 
         if (
             canvasState.mode === CanvasMode.None ||
             canvasState.mode === CanvasMode.Pressing
         ) {
             document.body.style.cursor = 'default';
-            unselectLayers();
             setCanvasState({
                 mode: CanvasMode.None,
             });
@@ -1028,7 +1038,6 @@ export const Canvas = () => {
             const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
             const changed = initialLayer !== liveLayer;
 
-            setShowingSelectionBox(true);
             setCanvasState({
                 mode: CanvasMode.None,
             });
@@ -1041,6 +1050,8 @@ export const Canvas = () => {
                     return;
                 }
             }
+
+            setJustChanged(changed);
 
             let layerIds: any = [];
             let layerUpdates: any = [];
@@ -1064,43 +1075,10 @@ export const Canvas = () => {
                     performAction(command);
                 }
             }
-
-            if (selectedLayersRef.current.length === 1 && showingSelectionBox && e.button === 0) {
-                if ((layerType === LayerType.Text
-                    || layerType === LayerType.Note
-                    || layerType === LayerType.Rectangle
-                    || layerType === LayerType.Ellipse
-                    || layerType === LayerType.Rhombus
-                    || layerType === LayerType.Triangle
-                    || layerType === LayerType.Star
-                    || layerType === LayerType.Hexagon
-                    || layerType === LayerType.BigArrowLeft
-                    || layerType === LayerType.BigArrowRight
-                    || layerType === LayerType.BigArrowUp
-                    || layerType === LayerType.BigArrowDown
-                    || layerType === LayerType.CommentBubble)
-                    && !changed && layerRef.current) {
-                    const layer = layerRef.current;
-                    layer.focus();
-
-                    const range = document.createRange();
-                    range.selectNodeContents(layer);
-                    range.collapse(false);
-
-                    const selection = window.getSelection();
-                    selection?.removeAllRanges();
-                    selection?.addRange(range);
-                    if (layer.value || layer.value === "") {
-                        layer.selectionStart = layer.selectionEnd = layer.value.length;
-                    }
-                }
-            }
-
             setCanvasState({
                 mode: CanvasMode.None,
             });
         } else if (canvasState.mode === CanvasMode.Resizing || canvasState.mode === CanvasMode.ArrowResizeHandler) {
-            setShowingSelectionBox(true);
             let layerIds: any = [];
             let layerUpdates: any = [];
             selectedLayersRef.current.forEach(id => {
@@ -1145,6 +1123,7 @@ export const Canvas = () => {
         ]);
 
     const onLayerPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
+
         if (
             canvasStateRef.current.mode === CanvasMode.Pencil ||
             canvasStateRef.current.mode === CanvasMode.Inserting ||
@@ -1152,7 +1131,7 @@ export const Canvas = () => {
             canvasStateRef.current.mode === CanvasMode.Eraser ||
             canvasStateRef.current.mode === CanvasMode.Laser ||
             canvasStateRef.current.mode === CanvasMode.Highlighter ||
-            e.button !== 0
+            (e.pointerType && e.button !== 0)
         ) {
             return;
         }
@@ -1171,14 +1150,17 @@ export const Canvas = () => {
     }, [selectedLayersRef]);
 
     const onTouchDown = useCallback((e: React.TouchEvent) => {
+        setIsMoving(false);
         setActiveTouches(e.touches.length);
     }, []);
 
     const onTouchUp = useCallback((e: React.TouchEvent) => {
         setActiveTouches(e.changedTouches.length);
+        setIsMoving(false);
     }, []);
 
     const onTouchMove = useCallback((e: React.TouchEvent) => {
+        setIsMoving(true);
         e.preventDefault();
         setActiveTouches(e.touches.length);
 
@@ -1329,14 +1311,22 @@ export const Canvas = () => {
             switch (e.key.toLocaleLowerCase()) {
                 case "z": {
                     if (e.ctrlKey || e.metaKey) {
-                        if (e.shiftKey && redoStack.length > 0) {
-                            redo();
-                            return;
-                        } else if (!e.shiftKey && history.length > 0) {
-                            undo();
-                            return;
-                        }
-                        e.preventDefault();
+
+                        if (
+                            document.activeElement &&
+                            document.activeElement.getAttribute('contentEditable') !== 'true' &&
+                            document.activeElement.tagName !== 'TEXTAREA'
+                          ) {
+                            // if we are not inside a content editable or textarea
+                            if (e.shiftKey && redoStack.length > 0) {
+                                redo();
+                                return;
+                            } else if (!e.shiftKey && history.length > 0) {
+                                undo();
+                                return;
+                            }
+                            e.preventDefault();
+                          }
                     }
                     break;
                 }
@@ -1509,7 +1499,7 @@ export const Canvas = () => {
                 setMagicPathAssist={setMagicPathAssist}
                 magicPathAssist={magicPathAssist}
             />
-            {!isMoving && canvasState.mode !== CanvasMode.Resizing && (
+            {!isMoving && canvasState.mode !== CanvasMode.Resizing && canvasState.mode !== CanvasMode.SelectionNet && activeTouches < 2 && (
                 <SelectionTools
                     setLiveLayerIds={setLiveLayersId}
                     setLiveLayers={setLiveLayers}
@@ -1540,16 +1530,20 @@ export const Canvas = () => {
                         transformOrigin: 'top left',
                     }}
                 >
-                    {liveLayersId.map((layerId: any) => (
-                        <LayerPreview
-                            setLiveLayers={setLiveLayers}
-                            layer={liveLayers[layerId]}
-                            key={layerId}
-                            id={layerId}
-                            onLayerPointerDown={onLayerPointerDown}
-                            onRefChange={setLayerRef}
-                        />
-                    ))}
+                    {liveLayersId.map((layerId: any) => {
+                    const isFocused = selectedLayersRef.current.length === 1 && selectedLayersRef.current[0] === layerId && !justChanged;
+                        return (
+                            <LayerPreview
+                                setLiveLayers={setLiveLayers}
+                                layer={liveLayers[layerId]}
+                                key={layerId}
+                                id={layerId}
+                                onLayerPointerDown={onLayerPointerDown}
+                                focused={isFocused}
+                                onRefChange={setLayerRef}
+                            />
+                        );
+                    })}
                     {currentPreviewLayer && (
                         <CurrentPreviewLayer
                             layer={currentPreviewLayer}

@@ -15,6 +15,7 @@ interface TextProps {
     onPointerDown?: (e: any, id: string) => void;
     selectionColor?: string;
     onRefChange?: (ref: React.RefObject<any>) => void;
+    focused?: boolean;
 };
 
   export const Text = memo(({
@@ -24,18 +25,42 @@ interface TextProps {
     selectionColor,
     setLiveLayers,
     onRefChange,
+    focused = false
 }: TextProps) => {
     const { x, y, width, height, fill, value: initialValue, textFontSize } = layer;
+    const alignX = layer.alignX || "center";
     const [value, setValue] = useState(initialValue);
     const textRef = useRef<any>(null);
     const fillColor = colorToCss(layer.fill);
     const isTransparent = fillColor === 'rgba(0,0,0,0)';
 
     const handlePointerDown = useCallback((e: React.PointerEvent) => {
-        e.preventDefault();
-        onPointerDown?.(e, id);
-        onRefChange?.(textRef);
-    }, [onPointerDown, id, onRefChange]);
+
+        if (e.pointerType === "touch") {
+            return;
+          }
+
+          onRefChange?.(textRef);
+      
+          if (e.target === textRef.current) {
+      
+            if (focused) {
+              e.stopPropagation();
+            } else {
+              e.preventDefault();
+              if (onPointerDown) onPointerDown(e, id);
+            }
+            return;
+          } else if (focused) {
+            e.preventDefault();
+            e.stopPropagation();
+            textRef.current.focus();
+          }
+      
+          if (onPointerDown) {
+            onPointerDown(e, id);
+          }
+    }, [onPointerDown, id, onRefChange, focused]);
 
     const handleOnTouchDown = useCallback((e: React.TouchEvent) => {
         e.preventDefault();
@@ -55,15 +80,8 @@ interface TextProps {
             setLiveLayers((prevLayers: any) => {
                 return { ...prevLayers, [id]: { ...newLayer } };
             });
-            localStorage.setItem('layers', JSON.stringify({ ...newLayer }));
         }
     }, [layer, textFontSize, setLiveLayers, id]);
-
-    useEffect(() => {
-        if (onRefChange) {
-            onRefChange(textRef);
-        }
-    }, [textRef, onRefChange]);
 
     useEffect(() => {
         if (textRef.current) {
@@ -87,11 +105,6 @@ interface TextProps {
                 height={height}
                 style={{
                     outline: selectionColor ? `2px solid ${selectionColor}` : "none",
-                }}
-                onPointerMove={(e) => {
-                    if (e.buttons === 1) {
-                        handlePointerDown(e);
-                    }
                 }}
                 onPointerDown={(e) => handlePointerDown(e)}
                 onTouchStart={(e) => handleOnTouchDown(e)}
@@ -119,6 +132,7 @@ interface TextProps {
                         overflowX: "hidden",
                         userSelect: "none",
                         fontSize: textFontSize,
+                        textAlign: alignX
                     }}
                 />
             </foreignObject>

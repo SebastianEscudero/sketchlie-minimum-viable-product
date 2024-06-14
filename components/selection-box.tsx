@@ -35,14 +35,6 @@ export const SelectionBox = memo(({
 
   const soleLayerId = selectedLayers.length === 1 ? selectedLayers[0] : null;
 
-  const isShowingHandles = useMemo(() => {
-    if (soleLayerId) {
-      const soleLayer = liveLayers[soleLayerId];
-      return soleLayer;
-    }
-    return false;
-  }, [soleLayerId, liveLayers]);
-
   const isTextLayer = useMemo(() => {
     if (soleLayerId) {
       const soleLayer = liveLayers[soleLayerId];
@@ -117,7 +109,7 @@ export const SelectionBox = memo(({
     <>
       <rect
         onContextMenu={handleRightClick}
-        className="fill-transparent stroke-blue-500"
+        className=" stroke-blue-500 fill-transparent pointer-events-none"
         style={{
           strokeWidth: strokeWidth,
           transform: `translate(${bounds.x}px, ${bounds.y}px)`,
@@ -126,14 +118,6 @@ export const SelectionBox = memo(({
         y={0}
         width={bounds.width}
         height={bounds.height}
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          const position = pointerEventToCanvasPoint(e, camera, zoom)
-          setCanvasState({
-            mode: CanvasMode.Translating,
-            current: position
-          })
-        }}
       />
         <>
           <rect

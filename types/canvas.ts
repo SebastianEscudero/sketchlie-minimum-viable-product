@@ -52,6 +52,8 @@ export type RectangleLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type EllipseLayer = {
@@ -64,6 +66,8 @@ export type EllipseLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type RhombusLayer = {
@@ -76,6 +80,8 @@ export type RhombusLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type TriangleLayer = {
@@ -88,6 +94,8 @@ export type TriangleLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type StarLayer = {
@@ -100,6 +108,8 @@ export type StarLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type HexagonLayer = {
@@ -112,6 +122,8 @@ export type HexagonLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type BigArrowLeftLayer = {
@@ -124,6 +136,8 @@ export type BigArrowLeftLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type BigArrowRightLayer = {
@@ -136,6 +150,8 @@ export type BigArrowRightLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type BigArrowDownLayer = {
@@ -148,6 +164,8 @@ export type BigArrowDownLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type BigArrowUpLayer = {
@@ -160,6 +178,8 @@ export type BigArrowUpLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type CommentBubbleLayer = {
@@ -172,6 +192,8 @@ export type CommentBubbleLayer = {
   outlineFill: Color | null;
   textFontSize: number;
   value?: string;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type LineLayer = {
@@ -182,6 +204,8 @@ export type LineLayer = {
   height: number;
   width: number;
   fill: Color;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 export type PathLayer = {
@@ -214,6 +238,7 @@ export type TextLayer = {
   outlineFill: Color | null;
   value?: string;
   textFontSize: number
+  alignX?: "left" | "center" | "right";
 };
 
 export type NoteLayer = {
@@ -226,6 +251,8 @@ export type NoteLayer = {
   outlineFill: Color | null;
   value?: string;
   textFontSize: number;
+  alignX?: "left" | "center" | "right";
+  alignY?: "top" | "center" | "bottom";
 };
 
 
@@ -337,6 +364,7 @@ export type Presence = {
 
 export type User = {
   userId: string;
+  connectionId: number;
   presence: Presence | null;
   information: {
       name?: string;
