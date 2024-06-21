@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { ArrowUpFromLine, Check, ChevronRight, Eye, FilePlus2 } from "lucide-react";
+import { Check, ChevronRight, Eye, FilePlus2 } from "lucide-react";
 import { DropdownMenuContentProps } from "@radix-ui/react-dropdown-menu";
 
 import {
@@ -10,8 +10,9 @@ import {
     DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { exportToPNG } from "@/lib/utils";
 import { ConfirmModal } from "./confirm-delete-board";
+import { ExportDropdownMenu } from "./ExportDropDownMenu";
+import { BackgroundMenu } from "./background-menu";
 
 interface ActionsProps {
     children: React.ReactNode;
@@ -19,8 +20,8 @@ interface ActionsProps {
     sideOffset?: DropdownMenuContentProps["sideOffset"];
     setLiveLayers: (layers: any) => void;
     setLiveLayersId: (layersId: string[]) => void;
-    setIsBackgroundGridVisible: (isVisible: boolean) => void;
-    isBackgroundGridVisible: boolean;
+    setBackground?: (background: string) => void;
+    Background?: string;
 };
 
 export const Actions = ({
@@ -29,8 +30,8 @@ export const Actions = ({
     sideOffset,
     setLiveLayers,
     setLiveLayersId,
-    setIsBackgroundGridVisible,
-    isBackgroundGridVisible,
+    setBackground,
+    Background,
 }: ActionsProps) => {
 
     let liveLayers = localStorage.getItem("layers");
@@ -58,35 +59,6 @@ export const Actions = ({
                 sideOffset={sideOffset}
                 className="w-60 ml-10"
             >
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            className="p-3 cursor-pointer text-sm w-full justify-start font-semibold"
-                        >
-                            <div className="flex flex-row items-center">
-                                <Eye className="h-4 w-4 mr-2" />
-                                View
-                            </div>
-                            <ChevronRight className="h-4 w-4 ml-auto" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent side="right" sideOffset={10}>
-                        <Button
-                            variant="ghost"
-                            className="p-3 cursor-pointer text-sm w-full justify-start font-semibold"
-                            onClick={() => {
-                                setIsBackgroundGridVisible(!isBackgroundGridVisible)
-                                localStorage.setItem("isBackgroundGridVisible", JSON.stringify(!isBackgroundGridVisible))
-                            }}
-                        >
-                            {isBackgroundGridVisible && (
-                                <Check className="h-4 w-4 mr-2" />
-                            )}
-                            Show Grid
-                        </Button>
-                    </DropdownMenuContent>
-                </DropdownMenu>
                 <ConfirmModal
                     header="Crear nueva pizarra?"
                     description="Esto borrará todo el contenido de la pizarra."
@@ -94,20 +66,14 @@ export const Actions = ({
                 >
                     <Button
                         variant="ghost"
-                        className="p-3 cursor-pointer text-sm w-full justify-start font-semibold"
+                        className="p-3 cursor-pointer text-sm w-full justify-start font-normal"
                     >
                         <FilePlus2 className="h-4 w-4 mr-2" />
                         Nueva Pizarra
                     </Button>
                 </ConfirmModal>
-                <Button
-                    variant="ghost"
-                    className="p-3 cursor-pointer text-sm w-full justify-start font-semibold"
-                    onClick={() => exportToPNG()}
-                >
-                    <ArrowUpFromLine className="h-4 w-4 mr-2" />
-                    Export to PNG
-                </Button>
+                <ExportDropdownMenu />
+                <BackgroundMenu setBackground={setBackground} Background={Background} />
             </DropdownMenuContent>
         </DropdownMenu>
     );

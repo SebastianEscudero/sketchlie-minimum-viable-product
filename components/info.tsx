@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Hint } from "@/components/hint";
 import { Menu, Zap } from "lucide-react";
 import { Actions } from "./actions";
-import { Layers, Point } from "@/types/canvas";
+import { Layers } from "@/types/canvas";
 import { useState } from "react";
 import { NeedMore } from "./need-more";
 
@@ -21,15 +21,15 @@ const TabSeparator = () => {
 interface InfoProps {
     setLiveLayers: (layers: Layers) => void;
     setLiveLayersId: (layersId: string[]) => void;
-    setIsBackgroundGridVisible: (isVisible: boolean) => void;
-    isBackgroundGridVisible: boolean;
+    setBackground: (background: string) => void;
+    background: string;
 }
 
 export const Info = ({
     setLiveLayersId,
     setLiveLayers,
-    setIsBackgroundGridVisible,
-    isBackgroundGridVisible,
+    setBackground,
+    background,
 }: InfoProps) => {
     const [isDialogOpen, setDialogOpen] = useState(false);
     return(
@@ -53,8 +53,8 @@ export const Info = ({
             <Actions 
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
-                setIsBackgroundGridVisible={setIsBackgroundGridVisible}
-                isBackgroundGridVisible={isBackgroundGridVisible}
+                setBackground={setBackground}
+                Background={background}
                 side="bottom" sideOffset={10}
             >
                 <div>

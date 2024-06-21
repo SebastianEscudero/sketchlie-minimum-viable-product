@@ -584,22 +584,6 @@ export function getSvgPathFromPoints(points: number[][], closed = false): string
 }
 export const NAME = "Sketchlie";
 
-export const exportToPNG = async () => {
-  const screenShot = document.getElementById("canvas") as HTMLElement;
-  screenShot.style.backgroundColor = '#F4F4F4';
-  toPng(screenShot, { quality: 1 }).then((dataUrl) => {
-    var anchor = document.createElement("a");
-    anchor.setAttribute("href", dataUrl);
-    anchor.setAttribute("download", `Tablero.png`);
-    anchor.click();
-    anchor.remove();
-  })
-};
-
-export const exportToSVG = async (title: string) => {
-  // implement
-};
-
 export function checkIfPathIsEllipse(pencilDraft: number[][], tolerance: number): {isEllipse: boolean, ellipseCheck: number} {
   const [minX, minY, maxX, maxY] = pencilDraft.reduce(
     ([minX, minY, maxX, maxY], [x, y]) => [

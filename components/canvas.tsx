@@ -208,9 +208,9 @@ export const Canvas = () => {
     const [pathStrokeSize, setPathStrokeSize] = useState(4);
     const [magicPathAssist, setMagicPathAssist] = useState(false);
     const [layerWithAssistDraw, setLayerWithAssistDraw] = useState(false);
-    const [isBackgroundGridVisible, setIsBackgroundGridVisible] = useState(() => { // used for showing/hiding the grid
-        const storedValue = localStorage.getItem('isBackgroundGridVisible');
-        return storedValue !== null ? JSON.parse(storedValue) : true;
+    const [background, setBackground] = useState(() => {
+        const storedValue = localStorage.getItem('background');
+        return storedValue ? storedValue : 'none';
     });
 
 
@@ -259,7 +259,7 @@ export const Canvas = () => {
                 height = 80
             }
 
-            fillColor = { r: 255, g: 249, b: 177, a: 1 }
+            fillColor = { r: 252, g: 225, b: 156, a: 1 }
         }
 
         if (layerType === LayerType.Text) {
@@ -354,7 +354,7 @@ export const Canvas = () => {
         } else {
             setCanvasState({ mode: CanvasMode.None });
         }
-        
+
     }, [liveLayers, liveLayersId, selectedLayersRef, layerWithAssistDraw]);
 
     const translateSelectedLayers = useCallback((point: Point) => {
@@ -644,7 +644,7 @@ export const Canvas = () => {
 
         selectedLayersRef.current.forEach(id => {
             const newLayer = { ...liveLayers[id] };
-    
+
             if (canvasState.mode === CanvasMode.Resizing) {
                 const newBoundingBox = resizeBounds(
                     canvasState.initialBounds,
@@ -666,13 +666,13 @@ export const Canvas = () => {
                     canvasState.handle,
                 );
             }
-    
+
             Object.assign(newLayer, bounds);
             liveLayers[id] = newLayer;
         })
         setLiveLayers({ ...liveLayers });
     }, [canvasState, liveLayers, selectedLayersRef, layerRef]);
-    
+
     const onResizeHandlePointerDown = useCallback((
         corner: Side,
         initialBounds: XYWH,
@@ -755,7 +755,7 @@ export const Canvas = () => {
             }
         }
 
-        removeHighlightFromText();        
+        removeHighlightFromText();
         unselectLayers();
 
         if (activeTouches > 1) {
@@ -799,7 +799,7 @@ export const Canvas = () => {
     }, [camera, canvasState.mode, setCanvasState, startDrawing, setIsPanning, setIsRightClickPanning, zoom, activeTouches, isPanning, unselectLayers, liveLayers]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
-        e.preventDefault();        
+        e.preventDefault();
         if (activeTouches > 1) {
             setPencilDraft([[]]);
             return;
@@ -904,11 +904,10 @@ export const Canvas = () => {
                     setCurrentPreviewLayer({ x, y, width, height, type: LayerType.Ellipse, textFontSize: 12, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 29, g: 29, b: 29, a: 1 } });
                     break;
                 case LayerType.Text:
-                    setCurrentPreviewLayer({ x, y, width, height: 18, textFontSize: 12, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 39, g: 142, b: 237, a: 1 } });
+                    setCurrentPreviewLayer({ x, y, width, height: 18, textFontSize: 12, type: LayerType.Rectangle, fill: { r: 0, g: 0, b: 0, a: 0 }, outlineFill: { r: 75, g: 161, b: 241, a: 1 } });
                     break;
                 case LayerType.Note:
                     setCurrentPreviewLayer({ x, y, width, height, textFontSize: 12, type: LayerType.Note, fill: { r: 255, g: 249, b: 177, a: 1 }, outlineFill: { r: 0, g: 0, b: 0, a: 0 } });
-                    break;
                 case LayerType.Arrow:
                     setCurrentPreviewLayer({
                         x: startPanPoint.x,
@@ -1033,7 +1032,6 @@ export const Canvas = () => {
             document.body.style.cursor = 'url(/custom-cursors/hand.svg) 8 8, auto';
             setIsPanning(false);
         } else if (canvasState.mode === CanvasMode.Translating) {
-            const layerType = liveLayers[selectedLayersRef.current[0]].type;
             const initialLayer = JSON.stringify(initialLayers[selectedLayersRef.current[0]]);
             const liveLayer = JSON.stringify(liveLayers[selectedLayersRef.current[0]]);
             const changed = initialLayer !== liveLayer;
@@ -1052,7 +1050,6 @@ export const Canvas = () => {
             }
 
             setJustChanged(changed);
-
             let layerIds: any = [];
             let layerUpdates: any = [];
             selectedLayersRef.current.forEach(id => {
@@ -1075,6 +1072,7 @@ export const Canvas = () => {
                     performAction(command);
                 }
             }
+
             setCanvasState({
                 mode: CanvasMode.None,
             });
@@ -1316,7 +1314,7 @@ export const Canvas = () => {
                             document.activeElement &&
                             document.activeElement.getAttribute('contentEditable') !== 'true' &&
                             document.activeElement.tagName !== 'TEXTAREA'
-                          ) {
+                        ) {
                             // if we are not inside a content editable or textarea
                             if (e.shiftKey && redoStack.length > 0) {
                                 redo();
@@ -1326,7 +1324,7 @@ export const Canvas = () => {
                                 return;
                             }
                             e.preventDefault();
-                          }
+                        }
                     }
                     break;
                 }
@@ -1459,13 +1457,15 @@ export const Canvas = () => {
         <main
             className={`fixed h-full w-full bg-neutral-100 touch-none overscroll-none`}
             style={{
-                background: isBackgroundGridVisible ? `
-                linear-gradient(0deg, rgba(0,0,0,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px),
-                #f4f4f4
-            ` : '#f4f4f4',
-                backgroundSize: isBackgroundGridVisible ? `${65 * zoom}px ${65 * zoom}px` : undefined, // Adjust the size based on the zoom level
-                backgroundPosition: isBackgroundGridVisible ? `${camera.x}px ${camera.y}px` : undefined,
+                backgroundImage: (background === 'grid') ? `
+        linear-gradient(0deg, rgba(0,0,0,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
+      ` : (background === 'line') ? `
+        linear-gradient(0deg, rgba(0,0,0,0.05) 1px, transparent 1px)
+      ` : 'none',
+                backgroundColor: '#f4f4f4',
+                backgroundSize: (background === 'grid' || background === 'line') ? `${65 * zoom}px ${65 * zoom}px` : undefined,
+                backgroundPosition: (background === 'grid' || background === 'line') ? `${camera.x}px ${camera.y}px` : undefined,
                 WebkitOverflowScrolling: 'touch',
                 WebkitUserSelect: 'none',
             }}
@@ -1474,8 +1474,8 @@ export const Canvas = () => {
             <Info
                 setLiveLayers={setLiveLayers}
                 setLiveLayersId={setLiveLayersId}
-                setIsBackgroundGridVisible={setIsBackgroundGridVisible}
-                isBackgroundGridVisible={isBackgroundGridVisible}
+                setBackground={setBackground}
+                background={background}
             />
             <SketchlieBlock />
             <BottomCanvasLinks />
@@ -1501,105 +1501,105 @@ export const Canvas = () => {
                 setMagicPathAssist={setMagicPathAssist}
                 magicPathAssist={magicPathAssist}
             />
-            {!isMoving && canvasState.mode !== CanvasMode.Resizing && canvasState.mode !== CanvasMode.ArrowResizeHandler && canvasState.mode !== CanvasMode.SelectionNet && activeTouches < 2 && (
-                <SelectionTools
-                    setLiveLayerIds={setLiveLayersId}
-                    setLiveLayers={setLiveLayers}
-                    liveLayerIds={liveLayersId}
-                    liveLayers={liveLayers}
-                    selectedLayers={selectedLayersRef.current}
-                    zoom={zoom}
-                    camera={camera}
-                    DeleteLayerCommand={DeleteLayerCommand}
-                    InsertLayerCommand={InsertLayerCommand}
-                    performAction={performAction}
-                />
+            {!isMoving && canvasState.mode !== CanvasMode.Resizing && canvasState.mode !== CanvasMode.ArrowResizeHandler && canvasState.mode !== CanvasMode.SelectionNet && canvasState.mode !== CanvasMode.Inserting && activeTouches < 2 && (<SelectionTools
+                setLiveLayerIds={setLiveLayersId}
+                setLiveLayers={setLiveLayers}
+                liveLayerIds={liveLayersId}
+                liveLayers={liveLayers}
+                selectedLayers={selectedLayersRef.current}
+                zoom={zoom}
+                camera={camera}
+                DeleteLayerCommand={DeleteLayerCommand}
+                InsertLayerCommand={InsertLayerCommand}
+                performAction={performAction}
+            />
             )}
-            <svg
-                id="canvas"
-                className="h-[100vh] w-[100vw]"
-                onWheel={onWheel}
-                onTouchStart={onTouchDown}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchUp}
-                onPointerMove={onPointerMove}
-                onPointerDown={onPointerDown}
-                onPointerUp={onPointerUp}
-            >
-                <g
-                    style={{
-                        transform: `translate(${camera.x}px, ${camera.y}px) scale(${zoom})`,
-                        transformOrigin: 'top left',
-                    }}
+            <div id="canvas">
+                <svg
+                    className="h-[100vh] w-[100vw]"
+                    onWheel={onWheel}
+                    onTouchStart={onTouchDown}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchUp}
+                    onPointerMove={onPointerMove}
+                    onPointerDown={onPointerDown}
+                    onPointerUp={onPointerUp}
                 >
-                    {liveLayersId.map((layerId: any) => {
-                    const isFocused = selectedLayersRef.current.length === 1 && selectedLayersRef.current[0] === layerId && !justChanged;
-                        return (
-                            <LayerPreview
-                                setLiveLayers={setLiveLayers}
-                                layer={liveLayers[layerId]}
-                                key={layerId}
-                                id={layerId}
-                                onLayerPointerDown={onLayerPointerDown}
-                                focused={isFocused}
-                                onRefChange={setLayerRef}
+                    <g
+                        style={{
+                            transform: `translate(${camera.x}px, ${camera.y}px) scale(${zoom})`,
+                            transformOrigin: 'top left',
+                        }}
+                    >
+                        {liveLayersId.map((layerId: any) => {
+                            const isFocused = selectedLayersRef.current.length === 1 && selectedLayersRef.current[0] === layerId && !justChanged;
+                            return (
+                                <LayerPreview
+                                    setLiveLayers={setLiveLayers}
+                                    layer={liveLayers[layerId]}
+                                    key={layerId}
+                                    id={layerId}
+                                    onLayerPointerDown={onLayerPointerDown}
+                                    focused={isFocused}
+                                    onRefChange={setLayerRef}
+                                />
+                            );
+                        })}
+                        {currentPreviewLayer && (
+                            <CurrentPreviewLayer
+                                layer={currentPreviewLayer}
                             />
-                        );
-                    })}
-                    {currentPreviewLayer && (
-                        <CurrentPreviewLayer
-                            layer={currentPreviewLayer}
-                        />
-                    )}
-                    {!isMoving && activeTouches < 2 && (
-                        <SelectionBox
-                            zoom={zoom}
-                            liveLayers={liveLayers}
-                            selectedLayers={selectedLayersRef.current}
-                            onResizeHandlePointerDown={onResizeHandlePointerDown}
-                            onArrowResizeHandlePointerDown={onArrowResizeHandlePointerDown}
-                            setCanvasState={setCanvasState}
-                            camera={camera}
-                        />
-                    )}
-                    {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && activeTouches < 2 && (
-                        <rect
-                            style={{
-                                fill: 'rgba(59, 130, 246, 0.3)',
-                                stroke: '#3B82F6',
-                                strokeWidth: 1 / zoom
-                            }}
-                            x={Math.min(canvasState.origin.x, canvasState.current.x)}
-                            y={Math.min(canvasState.origin.y, canvasState.current.y)}
-                            width={Math.abs(canvasState.origin.x - canvasState.current.x)}
-                            height={Math.abs(canvasState.origin.y - canvasState.current.y)}
-                        />
-                    )}
-                    {
-                        pencilDraft != null && pencilDraft.length > 0 && pencilDraft[0].length > 0 && !pencilDraft.some(array => array.some(isNaN)) && (
-                            <Path
-                                points={pencilDraft}
-                                fill={
-                                    canvasState.mode === CanvasMode.Laser
-                                        ? '#F35223'
-                                        : canvasState.mode === CanvasMode.Highlighter
-                                            ? colorToCss({ ...pathColor, a: 0.7 }) // Semi-transparent yellow
-                                            : colorToCss(pathColor)
-                                }
-                                x={0}
-                                y={0}
-                                strokeSize={
-                                    canvasState.mode === CanvasMode.Laser
-                                        ? 5 / zoom
-                                        : canvasState.mode === CanvasMode.Highlighter
-                                            ? 30 / zoom // Increase stroke size for highlighter
-                                            : pathStrokeSize
-                                }
+                        )}
+                        {!isMoving && activeTouches < 2 && canvasState.mode !== CanvasMode.Inserting && (
+                            <SelectionBox
+                                zoom={zoom}
+                                liveLayers={liveLayers}
+                                selectedLayers={selectedLayersRef.current}
+                                onResizeHandlePointerDown={onResizeHandlePointerDown}
+                                onArrowResizeHandlePointerDown={onArrowResizeHandlePointerDown}
+                                setCanvasState={setCanvasState}
+                                camera={camera}
                             />
-                        )
-                    }
-                </g>
-            </svg>
+                        )}
+                        {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && activeTouches < 2 && (
+                            <rect
+                                style={{
+                                    fill: 'rgba(59, 130, 246, 0.3)',
+                                    stroke: '#3B82F6',
+                                    strokeWidth: 1 / zoom
+                                }}
+                                x={Math.min(canvasState.origin.x, canvasState.current.x)}
+                                y={Math.min(canvasState.origin.y, canvasState.current.y)}
+                                width={Math.abs(canvasState.origin.x - canvasState.current.x)}
+                                height={Math.abs(canvasState.origin.y - canvasState.current.y)}
+                            />
+                        )}
+                        {
+                            pencilDraft != null && pencilDraft.length > 0 && pencilDraft[0].length > 0 && !pencilDraft.some(array => array.some(isNaN)) && (
+                                <Path
+                                    points={pencilDraft}
+                                    fill={
+                                        canvasState.mode === CanvasMode.Laser
+                                            ? '#F35223'
+                                            : canvasState.mode === CanvasMode.Highlighter
+                                                ? colorToCss({ ...pathColor, a: 0.7 }) // Semi-transparent yellow
+                                                : colorToCss(pathColor)
+                                    }
+                                    x={0}
+                                    y={0}
+                                    strokeSize={
+                                        canvasState.mode === CanvasMode.Laser
+                                            ? 5 / zoom
+                                            : canvasState.mode === CanvasMode.Highlighter
+                                                ? 30 / zoom // Increase stroke size for highlighter
+                                                : pathStrokeSize
+                                    }
+                                />
+                            )
+                        }
+                    </g>
+                </svg>
+            </div>
         </main>
     );
 };
